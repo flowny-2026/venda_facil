@@ -187,6 +187,120 @@
             margin-left: 1rem;
         }
         
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(5px);
+        }
+        
+        .modal-content {
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            margin: 5% auto;
+            padding: 2rem;
+            border: 1px solid #334155;
+            border-radius: 1rem;
+            width: 90%;
+            max-width: 450px;
+            position: relative;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+        }
+        
+        .close {
+            color: #94a3b8;
+            float: right;
+            font-size: 2rem;
+            font-weight: bold;
+            cursor: pointer;
+            line-height: 1;
+            margin-top: -0.5rem;
+        }
+        
+        .close:hover {
+            color: #ef4444;
+        }
+        
+        .modal-title {
+            font-size: 1.8rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+            color: #f1f5f9;
+        }
+        
+        .modal-subtitle {
+            color: #94a3b8;
+            margin-bottom: 2rem;
+            font-size: 1rem;
+        }
+        
+        .login-form {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+        
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        
+        .form-group label {
+            font-weight: 600;
+            color: #f1f5f9;
+            font-size: 0.9rem;
+        }
+        
+        .form-group input {
+            padding: 0.75rem;
+            border: 1px solid #334155;
+            border-radius: 0.5rem;
+            background: rgba(30, 41, 59, 0.5);
+            color: white;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+        
+        .form-group input:focus {
+            outline: none;
+            border-color: #ef4444;
+            box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+        }
+        
+        .form-group input::placeholder {
+            color: #64748b;
+        }
+        
+        .btn-login {
+            width: 100%;
+            padding: 0.875rem;
+            font-size: 1rem;
+            margin-top: 0.5rem;
+        }
+        
+        .form-links {
+            text-align: center;
+            margin-top: 1rem;
+        }
+        
+        .form-links a {
+            color: #ef4444;
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: color 0.3s ease;
+        }
+        
+        .form-links a:hover {
+            color: #dc2626;
+            text-decoration: underline;
+        }
+        
         @media (max-width: 768px) {
             .systems {
                 grid-template-columns: 1fr;
@@ -206,6 +320,16 @@
             
             .container {
                 padding: 1rem;
+            }
+            
+            .modal-content {
+                margin: 10% auto;
+                width: 95%;
+                padding: 1.5rem;
+            }
+            
+            .modal-title {
+                font-size: 1.5rem;
             }
         }
     </style>
@@ -231,8 +355,8 @@
                     PDV completo para lojas e empresas. Gestão de vendas, produtos, vendedores e relatórios em tempo real.
                     Controle de estoque automático e múltiplas formas de pagamento.
                 </div>
-                <button class="btn" onclick="showInstructions('cliente')">
-                    Como Usar PDV
+                <button class="btn" onclick="showLogin('cliente')">
+                    🔑 Entrar como Cliente
                 </button>
             </div>
             
@@ -242,8 +366,8 @@
                     Painel administrativo para gerenciar múltiplas empresas clientes. Controle total do seu negócio SaaS
                     com dashboard consolidado e gestão de planos.
                 </div>
-                <button class="btn btn-secondary" onclick="showInstructions('admin')">
-                    Como Usar Admin
+                <button class="btn btn-secondary" onclick="showLogin('admin')">
+                    🔑 Entrar como Admin
                 </button>
             </div>
         </div>
@@ -293,32 +417,252 @@
         </div>
     </div>
 
+    <!-- Modal de Login -->
+    <div id="loginModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <div id="modalTitle" class="modal-title"></div>
+            <div id="modalSubtitle" class="modal-subtitle"></div>
+            
+            <form id="loginForm" class="login-form">
+                <div class="form-group">
+                    <label for="email">Email:</label>
+                    <input type="email" id="email" name="email" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="password">Senha:</label>
+                    <input type="password" id="password" name="password" required>
+                </div>
+                
+                <button type="submit" class="btn btn-login" id="loginBtn">Entrar</button>
+                
+                <div class="form-links">
+                    <a href="#" onclick="showForgotPassword()">Esqueci minha senha</a>
+                    <span id="registerLink"></span>
+                </div>
+            </form>
+            
+            <div id="forgotPasswordForm" class="login-form" style="display: none;">
+                <div class="form-group">
+                    <label for="resetEmail">Email para recuperação:</label>
+                    <input type="email" id="resetEmail" name="resetEmail" required>
+                </div>
+                
+                <button type="button" class="btn btn-login" onclick="sendPasswordReset()">Enviar Link de Recuperação</button>
+                
+                <div class="form-links">
+                    <a href="#" onclick="showLoginForm()">Voltar ao login</a>
+                </div>
+            </div>
+            
+            <div id="registerForm" class="login-form" style="display: none;">
+                <div class="form-group">
+                    <label for="regEmail">Email:</label>
+                    <input type="email" id="regEmail" name="regEmail" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="regPassword">Senha:</label>
+                    <input type="password" id="regPassword" name="regPassword" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="regConfirmPassword">Confirmar Senha:</label>
+                    <input type="password" id="regConfirmPassword" name="regConfirmPassword" required>
+                </div>
+                
+                <button type="button" class="btn btn-login" onclick="registerUser()">Cadastrar</button>
+                
+                <div class="form-links">
+                    <a href="#" onclick="showLoginForm()">Já tenho conta</a>
+                </div>
+            </div>
+            
+            <div id="loadingMessage" style="display: none; text-align: center; color: #94a3b8;">
+                Carregando...
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
-        function showInstructions(type) {
+        // Configuração do Supabase
+        const SUPABASE_URL = 'https://cvmjjzhvdmpbxquxepue.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_publishable_oALu383a0a883HK9BDl-_w_E9Y6kN2n';
+        
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
+        let currentLoginType = '';
+        
+        function showLogin(type) {
+            currentLoginType = type;
+            const modal = document.getElementById('loginModal');
+            const title = document.getElementById('modalTitle');
+            const subtitle = document.getElementById('modalSubtitle');
+            const registerLink = document.getElementById('registerLink');
+            
             if (type === 'cliente') {
-                alert(`🏪 SISTEMA CLIENTE (PDV)\n\n` +
-                      `Para usar localmente:\n` +
-                      `1. Clone: git clone https://github.com/flowny-2026/venda_facil.git\n` +
-                      `2. Configure Supabase (.env)\n` +
-                      `3. Execute: npm install && npm run dev\n` +
-                      `4. Acesse: http://localhost:5173\n\n` +
-                      `Funcionalidades:\n` +
-                      `• PDV com carrinho\n` +
-                      `• Gestão de produtos\n` +
-                      `• Cadastro de vendedores\n` +
-                      `• Relatórios em tempo real`);
+                title.textContent = '🏪 Login Cliente';
+                subtitle.textContent = 'Acesse seu sistema PDV';
+                registerLink.innerHTML = ' | <a href="#" onclick="showRegisterForm()">Criar conta</a>';
             } else {
-                alert(`🏢 SISTEMA ADMIN\n\n` +
-                      `Para usar localmente:\n` +
-                      `1. Clone o repositório\n` +
-                      `2. Configure Supabase\n` +
-                      `3. Execute: cd admin-system && npm install && npm run dev\n` +
-                      `4. Acesse: http://localhost:5180\n\n` +
-                      `Funcionalidades:\n` +
-                      `• Gestão de empresas\n` +
-                      `• Dashboard consolidado\n` +
-                      `• Controle de planos\n` +
-                      `• Estatísticas multi-empresa`);
+                title.textContent = '🏢 Login Admin';
+                subtitle.textContent = 'Painel administrativo';
+                registerLink.innerHTML = '';
+            }
+            
+            modal.style.display = 'block';
+            showLoginForm();
+        }
+        
+        function closeModal() {
+            document.getElementById('loginModal').style.display = 'none';
+            clearForms();
+        }
+        
+        function showLoginForm() {
+            document.getElementById('loginForm').style.display = 'block';
+            document.getElementById('forgotPasswordForm').style.display = 'none';
+            document.getElementById('registerForm').style.display = 'none';
+        }
+        
+        function showForgotPassword() {
+            document.getElementById('loginForm').style.display = 'none';
+            document.getElementById('forgotPasswordForm').style.display = 'block';
+            document.getElementById('registerForm').style.display = 'none';
+        }
+        
+        function showRegisterForm() {
+            if (currentLoginType !== 'cliente') return;
+            
+            document.getElementById('loginForm').style.display = 'none';
+            document.getElementById('forgotPasswordForm').style.display = 'none';
+            document.getElementById('registerForm').style.display = 'block';
+        }
+        
+        function clearForms() {
+            document.getElementById('loginForm').reset();
+            document.getElementById('forgotPasswordForm').reset();
+            document.getElementById('registerForm').reset();
+        }
+        
+        function showLoading(show) {
+            document.getElementById('loadingMessage').style.display = show ? 'block' : 'none';
+        }
+        
+        // Login
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            showLoading(true);
+            
+            try {
+                const { data, error } = await supabase.auth.signInWithPassword({
+                    email: email,
+                    password: password
+                });
+                
+                if (error) throw error;
+                
+                // Verificar se é admin
+                if (currentLoginType === 'admin') {
+                    const { data: adminData, error: adminError } = await supabase
+                        .from('admin_users')
+                        .select('*')
+                        .eq('email', email)
+                        .single();
+                    
+                    if (adminError || !adminData) {
+                        throw new Error('Acesso negado. Usuário não é administrador.');
+                    }
+                }
+                
+                // Sucesso - redirecionar
+                alert(`✅ Login realizado com sucesso!\n\nPara acessar o sistema completo:\n1. Clone o repositório\n2. Configure o Supabase\n3. Execute localmente`);
+                closeModal();
+                
+            } catch (error) {
+                alert(`❌ Erro no login: ${error.message}`);
+            } finally {
+                showLoading(false);
+            }
+        });
+        
+        // Registro
+        async function registerUser() {
+            if (currentLoginType !== 'cliente') return;
+            
+            const email = document.getElementById('regEmail').value;
+            const password = document.getElementById('regPassword').value;
+            const confirmPassword = document.getElementById('regConfirmPassword').value;
+            
+            if (password !== confirmPassword) {
+                alert('❌ As senhas não coincidem');
+                return;
+            }
+            
+            if (password.length < 6) {
+                alert('❌ A senha deve ter pelo menos 6 caracteres');
+                return;
+            }
+            
+            showLoading(true);
+            
+            try {
+                const { data, error } = await supabase.auth.signUp({
+                    email: email,
+                    password: password
+                });
+                
+                if (error) throw error;
+                
+                alert('✅ Conta criada com sucesso! Verifique seu email para confirmar a conta.');
+                showLoginForm();
+                
+            } catch (error) {
+                alert(`❌ Erro no cadastro: ${error.message}`);
+            } finally {
+                showLoading(false);
+            }
+        }
+        
+        // Recuperação de senha
+        async function sendPasswordReset() {
+            const email = document.getElementById('resetEmail').value;
+            
+            if (!email) {
+                alert('❌ Digite seu email');
+                return;
+            }
+            
+            showLoading(true);
+            
+            try {
+                const { error } = await supabase.auth.resetPasswordForEmail(email, {
+                    redirectTo: window.location.origin + '/reset-password'
+                });
+                
+                if (error) throw error;
+                
+                alert('✅ Link de recuperação enviado para seu email!');
+                showLoginForm();
+                
+            } catch (error) {
+                alert(`❌ Erro: ${error.message}`);
+            } finally {
+                showLoading(false);
+            }
+        }
+        
+        // Fechar modal clicando fora
+        window.onclick = function(event) {
+            const modal = document.getElementById('loginModal');
+            if (event.target === modal) {
+                closeModal();
             }
         }
     </script>
