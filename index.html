@@ -7,22 +7,22 @@
     <meta name="description" content="Transforme suas vendas com o sistema PDV mais fácil e completo do mercado. Gestão de estoque, vendedores e relatórios em tempo real.">
     
     <!-- Favicon -->
-    <link rel="icon" type="image/x-icon" href="assets/images/favicon.ico">
-    <link rel="apple-touch-icon" href="assets/images/logo.png">
+    <link rel="icon" type="image/jpeg" href="assets/images/logo.jpg">
+    <link rel="apple-touch-icon" href="assets/images/logo.jpg">
     
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://flowny-2026.github.io/venda_facil/">
     <meta property="og:title" content="VendaFácil - Sistema PDV Completo">
     <meta property="og:description" content="Transforme suas vendas com o sistema PDV mais fácil e completo do mercado.">
-    <meta property="og:image" content="https://flowny-2026.github.io/venda_facil/assets/images/og-image.png">
+    <meta property="og:image" content="https://flowny-2026.github.io/venda_facil/assets/images/logo.jpg">
     
     <!-- Twitter -->
     <meta property="twitter:card" content="summary_large_image">
     <meta property="twitter:url" content="https://flowny-2026.github.io/venda_facil/">
     <meta property="twitter:title" content="VendaFácil - Sistema PDV Completo">
     <meta property="twitter:description" content="Transforme suas vendas com o sistema PDV mais fácil e completo do mercado.">
-    <meta property="twitter:image" content="https://flowny-2026.github.io/venda_facil/assets/images/og-image.png">
+    <meta property="twitter:image" content="https://flowny-2026.github.io/venda_facil/assets/images/logo.jpg">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -83,12 +83,19 @@
         }
         
         .logo-img {
-            height: 40px;
+            height: 50px;
             width: auto;
+            object-fit: contain;
         }
         
         .logo-text {
             display: inline-block;
+        }
+        
+        @media (max-width: 768px) {
+            .logo-img {
+                height: 40px;
+            }
         }
         
         .nav-links {
@@ -582,9 +589,7 @@
     <header>
         <nav>
             <div class="logo">
-                <!-- Quando adicionar o logo, descomente a linha abaixo e remova o emoji -->
-                <!-- <img src="assets/images/logo.png" alt="VendaFácil" class="logo-img"> -->
-                <span class="logo-text">💰 VendaFácil</span>
+                <img src="assets/images/logo.jpg" alt="VendaFácil" class="logo-img">
             </div>
             <ul class="nav-links">
                 <li><a href="#beneficios">Benefícios</a></li>
