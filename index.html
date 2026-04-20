@@ -491,11 +491,22 @@
         const SUPABASE_URL = 'https://cvmjjzhvdmpbxquxepue.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_oALu383a0a883HK9BDl-_w_E9Y6kN2n';
         
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        let supabase = null;
+        
+        // Inicializar Supabase quando disponível
+        if (window.supabase) {
+            try {
+                supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                console.log('✅ Supabase inicializado');
+            } catch (error) {
+                console.error('❌ Erro ao inicializar Supabase:', error);
+            }
+        }
         
         let currentLoginType = '';
         
         function showLogin(type) {
+            console.log('🔍 showLogin chamado com tipo:', type);
             currentLoginType = type;
             const modal = document.getElementById('loginModal');
             const title = document.getElementById('modalTitle');
@@ -505,7 +516,7 @@
             if (type === 'cliente') {
                 title.textContent = '🏪 Login Cliente';
                 subtitle.textContent = 'Acesse seu sistema PDV';
-                registerLink.innerHTML = ' | <a href="#" onclick="showRegisterForm()">Criar conta</a>';
+                registerLink.innerHTML = ' | <a href="#" onclick="showRegisterForm(); return false;">Criar conta</a>';
             } else {
                 title.textContent = '🏢 Login Admin';
                 subtitle.textContent = 'Painel administrativo';
@@ -514,6 +525,7 @@
             
             modal.style.display = 'block';
             showLoginForm();
+            console.log('✅ Modal aberto');
         }
         
         function closeModal() {
@@ -528,17 +540,21 @@
         }
         
         function showForgotPassword() {
+            event.preventDefault();
             document.getElementById('loginForm').style.display = 'none';
             document.getElementById('forgotPasswordForm').style.display = 'block';
             document.getElementById('registerForm').style.display = 'none';
+            return false;
         }
         
         function showRegisterForm() {
-            if (currentLoginType !== 'cliente') return;
+            event.preventDefault();
+            if (currentLoginType !== 'cliente') return false;
             
             document.getElementById('loginForm').style.display = 'none';
             document.getElementById('forgotPasswordForm').style.display = 'none';
             document.getElementById('registerForm').style.display = 'block';
+            return false;
         }
         
         function clearForms() {
@@ -557,6 +573,11 @@
             
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
+            
+            if (!supabase) {
+                alert('⚠️ Sistema em modo demonstração.\n\nPara usar o sistema completo:\n\n1. Clone o repositório:\ngit clone https://github.com/flowny-2026/venda_facil.git\n\n2. Configure o Supabase (.env)\n\n3. Execute localmente:\nnpm install && npm run dev\n\n4. Acesse: http://localhost:5173');
+                return;
+            }
             
             showLoading(true);
             
@@ -596,6 +617,11 @@
         async function registerUser() {
             if (currentLoginType !== 'cliente') return;
             
+            if (!supabase) {
+                alert('⚠️ Sistema em modo demonstração.\n\nPara criar uma conta:\n\n1. Clone o repositório\n2. Configure o Supabase\n3. Execute localmente\n4. Crie sua conta no sistema');
+                return;
+            }
+            
             const email = document.getElementById('regEmail').value;
             const password = document.getElementById('regPassword').value;
             const confirmPassword = document.getElementById('regConfirmPassword').value;
@@ -632,6 +658,11 @@
         
         // Recuperação de senha
         async function sendPasswordReset() {
+            if (!supabase) {
+                alert('⚠️ Sistema em modo demonstração.\n\nPara recuperar sua senha:\n\n1. Clone o repositório\n2. Configure o Supabase\n3. Execute localmente\n4. Use a função de recuperação de senha');
+                return;
+            }
+            
             const email = document.getElementById('resetEmail').value;
             
             if (!email) {
