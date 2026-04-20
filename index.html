@@ -535,6 +535,184 @@
             color: var(--primary-blue);
         }
         
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 2000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(5px);
+            animation: fadeIn 0.3s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        .modal-content {
+            background: white;
+            margin: 5% auto;
+            padding: 2.5rem;
+            border-radius: 16px;
+            width: 90%;
+            max-width: 450px;
+            position: relative;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+            animation: slideDown 0.3s ease;
+        }
+        
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .close {
+            color: var(--medium-gray);
+            float: right;
+            font-size: 2rem;
+            font-weight: bold;
+            cursor: pointer;
+            line-height: 1;
+            margin-top: -0.5rem;
+            transition: color 0.3s ease;
+        }
+        
+        .close:hover {
+            color: var(--primary-orange);
+        }
+        
+        .modal-title {
+            font-size: 1.8rem;
+            font-weight: 800;
+            margin-bottom: 0.5rem;
+            color: var(--primary-blue);
+            clear: both;
+        }
+        
+        .modal-subtitle {
+            color: var(--medium-gray);
+            margin-bottom: 2rem;
+            font-size: 1rem;
+        }
+        
+        .login-form {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+        
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        
+        .form-group label {
+            font-weight: 600;
+            color: var(--primary-blue);
+            font-size: 0.9rem;
+        }
+        
+        .form-group input {
+            padding: 0.875rem;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            font-family: 'Inter', sans-serif;
+        }
+        
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--primary-blue);
+            box-shadow: 0 0 0 3px rgba(11, 60, 140, 0.1);
+        }
+        
+        .btn-login {
+            width: 100%;
+            padding: 1rem;
+            font-size: 1rem;
+            margin-top: 0.5rem;
+            background: var(--primary-orange);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-login:hover {
+            background: #E66D00;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(255, 122, 0, 0.3);
+        }
+        
+        .form-links {
+            text-align: center;
+            margin-top: 1rem;
+            font-size: 0.9rem;
+        }
+        
+        .form-links a {
+            color: var(--primary-blue);
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s ease;
+        }
+        
+        .form-links a:hover {
+            color: var(--primary-orange);
+            text-decoration: underline;
+        }
+        
+        .system-choice {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        
+        .system-option {
+            padding: 1.5rem;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .system-option:hover {
+            border-color: var(--primary-blue);
+            background: rgba(11, 60, 140, 0.05);
+        }
+        
+        .system-option.active {
+            border-color: var(--primary-blue);
+            background: rgba(11, 60, 140, 0.1);
+        }
+        
+        .system-option .icon {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .system-option .title {
+            font-weight: 600;
+            color: var(--primary-blue);
+        }
+        
         /* Responsive */
         @media (max-width: 768px) {
             .nav-links {
@@ -597,7 +775,7 @@
                 <li><a href="#produto">Produto</a></li>
                 <li><a href="#depoimentos">Depoimentos</a></li>
             </ul>
-            <a href="#comecar" class="cta-button">Começar Agora</a>
+            <a href="#" onclick="openLoginModal(); return false;" class="cta-button">Começar Agora</a>
             <button class="mobile-menu-btn">☰</button>
         </nav>
     </header>
@@ -608,7 +786,7 @@
             <h1>Venda Mais, Venda Fácil</h1>
             <p>O sistema PDV completo que transforma a gestão do seu negócio. Controle vendas, estoque e equipe em um só lugar.</p>
             <div class="hero-buttons">
-                <a href="#comecar" class="btn-primary">Começar Gratuitamente</a>
+                <a href="#" onclick="openLoginModal(); return false;" class="btn-primary">Começar Gratuitamente</a>
                 <a href="#como-funciona" class="btn-secondary">Ver Como Funciona</a>
             </div>
         </div>
@@ -780,7 +958,7 @@
         <div class="container">
             <h2>Pronto para Vender Mais?</h2>
             <p>Comece gratuitamente hoje e transforme a gestão do seu negócio</p>
-            <a href="https://github.com/flowny-2026/venda_facil" class="btn-primary">Começar Agora - É Grátis</a>
+            <a href="#" onclick="openLoginModal(); return false;" class="btn-primary">Começar Agora - É Grátis</a>
         </div>
     </section>
 
@@ -824,7 +1002,339 @@
         </div>
     </footer>
 
+    <!-- Modal de Login -->
+    <div id="loginModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <div id="modalTitle" class="modal-title">Escolha seu Sistema</div>
+            <div id="modalSubtitle" class="modal-subtitle">Selecione como deseja acessar</div>
+            
+            <!-- Escolha do Sistema -->
+            <div id="systemChoice" class="system-choice">
+                <div class="system-option" onclick="selectSystem('cliente')">
+                    <div class="icon">🏪</div>
+                    <div class="title">Cliente</div>
+                    <div style="font-size: 0.85rem; color: #666; margin-top: 0.5rem;">Sistema PDV</div>
+                </div>
+                <div class="system-option" onclick="selectSystem('admin')">
+                    <div class="icon">🏢</div>
+                    <div class="title">Admin</div>
+                    <div style="font-size: 0.85rem; color: #666; margin-top: 0.5rem;">Painel Administrativo</div>
+                </div>
+            </div>
+            
+            <!-- Formulário de Login -->
+            <form id="loginForm" class="login-form" style="display: none;">
+                <div class="form-group">
+                    <label for="email">Email:</label>
+                    <input type="email" id="email" name="email" placeholder="seu@email.com" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="password">Senha:</label>
+                    <input type="password" id="password" name="password" placeholder="••••••••" required>
+                </div>
+                
+                <button type="submit" class="btn-login">Entrar</button>
+                
+                <div class="form-links">
+                    <a href="#" onclick="showForgotPassword(); return false;">Esqueci minha senha</a>
+                    <span id="registerLink"></span>
+                </div>
+                
+                <div class="form-links" style="margin-top: 1rem;">
+                    <a href="#" onclick="backToSystemChoice(); return false;">← Voltar</a>
+                </div>
+            </form>
+            
+            <!-- Formulário de Recuperação de Senha -->
+            <div id="forgotPasswordForm" class="login-form" style="display: none;">
+                <div class="form-group">
+                    <label for="resetEmail">Email para recuperação:</label>
+                    <input type="email" id="resetEmail" name="resetEmail" placeholder="seu@email.com" required>
+                </div>
+                
+                <button type="button" class="btn-login" onclick="sendPasswordReset()">Enviar Link de Recuperação</button>
+                
+                <div class="form-links">
+                    <a href="#" onclick="showLoginForm(); return false;">Voltar ao login</a>
+                </div>
+            </div>
+            
+            <!-- Formulário de Registro -->
+            <div id="registerForm" class="login-form" style="display: none;">
+                <div class="form-group">
+                    <label for="regEmail">Email:</label>
+                    <input type="email" id="regEmail" name="regEmail" placeholder="seu@email.com" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="regPassword">Senha:</label>
+                    <input type="password" id="regPassword" name="regPassword" placeholder="Mínimo 6 caracteres" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="regConfirmPassword">Confirmar Senha:</label>
+                    <input type="password" id="regConfirmPassword" name="regConfirmPassword" placeholder="Digite a senha novamente" required>
+                </div>
+                
+                <button type="button" class="btn-login" onclick="registerUser()">Cadastrar</button>
+                
+                <div class="form-links">
+                    <a href="#" onclick="showLoginForm(); return false;">Já tenho conta</a>
+                </div>
+            </div>
+            
+            <div id="loadingMessage" style="display: none; text-align: center; color: var(--medium-gray); padding: 2rem;">
+                <div style="font-size: 2rem; margin-bottom: 1rem;">⏳</div>
+                Carregando...
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
+        // Configuração do Supabase
+        const SUPABASE_URL = 'https://cvmjjzhvdmpbxquxepue.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_publishable_oALu383a0a883HK9BDl-_w_E9Y6kN2n';
+        
+        let supabaseClient = null;
+        let currentLoginType = '';
+        
+        // Inicializar Supabase
+        window.addEventListener('DOMContentLoaded', function() {
+            if (window.supabase) {
+                try {
+                    supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                    console.log('✅ Supabase inicializado');
+                } catch (error) {
+                    console.error('❌ Erro ao inicializar Supabase:', error);
+                }
+            } else {
+                console.log('⚠️ Supabase não disponível - modo demonstração');
+            }
+        });
+        
+        // Abrir modal
+        function openLoginModal() {
+            document.getElementById('loginModal').style.display = 'block';
+            showSystemChoice();
+        }
+        
+        // Fechar modal
+        function closeModal() {
+            document.getElementById('loginModal').style.display = 'none';
+            clearForms();
+        }
+        
+        // Mostrar escolha de sistema
+        function showSystemChoice() {
+            document.getElementById('systemChoice').style.display = 'grid';
+            document.getElementById('loginForm').style.display = 'none';
+            document.getElementById('forgotPasswordForm').style.display = 'none';
+            document.getElementById('registerForm').style.display = 'none';
+            document.getElementById('modalTitle').textContent = 'Escolha seu Sistema';
+            document.getElementById('modalSubtitle').textContent = 'Selecione como deseja acessar';
+        }
+        
+        // Voltar para escolha de sistema
+        function backToSystemChoice() {
+            showSystemChoice();
+        }
+        
+        // Selecionar sistema
+        function selectSystem(type) {
+            currentLoginType = type;
+            document.getElementById('systemChoice').style.display = 'none';
+            showLoginForm();
+            
+            const title = document.getElementById('modalTitle');
+            const subtitle = document.getElementById('modalSubtitle');
+            const registerLink = document.getElementById('registerLink');
+            
+            if (type === 'cliente') {
+                title.textContent = '🏪 Login Cliente';
+                subtitle.textContent = 'Acesse seu sistema PDV';
+                registerLink.innerHTML = ' | <a href="#" onclick="showRegisterForm(); return false;">Criar conta</a>';
+            } else {
+                title.textContent = '🏢 Login Admin';
+                subtitle.textContent = 'Painel administrativo';
+                registerLink.innerHTML = '';
+            }
+        }
+        
+        // Mostrar formulário de login
+        function showLoginForm() {
+            document.getElementById('loginForm').style.display = 'flex';
+            document.getElementById('forgotPasswordForm').style.display = 'none';
+            document.getElementById('registerForm').style.display = 'none';
+            document.getElementById('systemChoice').style.display = 'none';
+        }
+        
+        // Mostrar recuperação de senha
+        function showForgotPassword() {
+            document.getElementById('loginForm').style.display = 'none';
+            document.getElementById('forgotPasswordForm').style.display = 'flex';
+            document.getElementById('registerForm').style.display = 'none';
+            document.getElementById('modalTitle').textContent = 'Recuperar Senha';
+            document.getElementById('modalSubtitle').textContent = 'Digite seu email para receber o link';
+        }
+        
+        // Mostrar formulário de registro
+        function showRegisterForm() {
+            if (currentLoginType !== 'cliente') return;
+            
+            document.getElementById('loginForm').style.display = 'none';
+            document.getElementById('forgotPasswordForm').style.display = 'none';
+            document.getElementById('registerForm').style.display = 'flex';
+            document.getElementById('modalTitle').textContent = 'Criar Conta';
+            document.getElementById('modalSubtitle').textContent = 'Cadastre-se gratuitamente';
+        }
+        
+        // Limpar formulários
+        function clearForms() {
+            document.getElementById('loginForm').reset();
+            document.getElementById('forgotPasswordForm').reset();
+            document.getElementById('registerForm').reset();
+        }
+        
+        // Mostrar loading
+        function showLoading(show) {
+            document.getElementById('loadingMessage').style.display = show ? 'block' : 'none';
+            document.getElementById('loginForm').style.display = show ? 'none' : 'flex';
+            document.getElementById('forgotPasswordForm').style.display = 'none';
+            document.getElementById('registerForm').style.display = 'none';
+        }
+        
+        // Login
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            if (!supabaseClient) {
+                alert('⚠️ Sistema em modo demonstração.\n\nPara usar o sistema completo:\n\n1. Clone o repositório:\ngit clone https://github.com/flowny-2026/venda_facil.git\n\n2. Configure o Supabase (.env)\n\n3. Execute localmente:\nnpm install && npm run dev\n\n4. Sistema Cliente: http://localhost:5173\n5. Sistema Admin: http://localhost:5180');
+                return;
+            }
+            
+            showLoading(true);
+            
+            try {
+                const { data, error } = await supabaseClient.auth.signInWithPassword({
+                    email: email,
+                    password: password
+                });
+                
+                if (error) throw error;
+                
+                // Verificar se é admin
+                if (currentLoginType === 'admin') {
+                    const { data: adminData, error: adminError } = await supabaseClient
+                        .from('admin_users')
+                        .select('*')
+                        .eq('email', email)
+                        .single();
+                    
+                    if (adminError || !adminData) {
+                        throw new Error('Acesso negado. Usuário não é administrador.');
+                    }
+                }
+                
+                alert(`✅ Login realizado com sucesso!\n\nPara acessar o sistema completo:\n1. Clone o repositório\n2. Configure o Supabase\n3. Execute localmente\n\nSistema ${currentLoginType === 'admin' ? 'Admin: http://localhost:5180' : 'Cliente: http://localhost:5173'}`);
+                closeModal();
+                
+            } catch (error) {
+                alert(`❌ Erro no login: ${error.message}`);
+            } finally {
+                showLoading(false);
+            }
+        });
+        
+        // Registro
+        async function registerUser() {
+            if (currentLoginType !== 'cliente') return;
+            
+            if (!supabaseClient) {
+                alert('⚠️ Sistema em modo demonstração.\n\nPara criar uma conta:\n\n1. Clone o repositório\n2. Configure o Supabase\n3. Execute localmente\n4. Crie sua conta no sistema');
+                return;
+            }
+            
+            const email = document.getElementById('regEmail').value;
+            const password = document.getElementById('regPassword').value;
+            const confirmPassword = document.getElementById('regConfirmPassword').value;
+            
+            if (password !== confirmPassword) {
+                alert('❌ As senhas não coincidem');
+                return;
+            }
+            
+            if (password.length < 6) {
+                alert('❌ A senha deve ter pelo menos 6 caracteres');
+                return;
+            }
+            
+            showLoading(true);
+            
+            try {
+                const { data, error } = await supabaseClient.auth.signUp({
+                    email: email,
+                    password: password
+                });
+                
+                if (error) throw error;
+                
+                alert('✅ Conta criada com sucesso! Verifique seu email para confirmar a conta.');
+                showLoginForm();
+                
+            } catch (error) {
+                alert(`❌ Erro no cadastro: ${error.message}`);
+            } finally {
+                showLoading(false);
+            }
+        }
+        
+        // Recuperação de senha
+        async function sendPasswordReset() {
+            if (!supabaseClient) {
+                alert('⚠️ Sistema em modo demonstração.\n\nPara recuperar sua senha:\n\n1. Clone o repositório\n2. Configure o Supabase\n3. Execute localmente\n4. Use a função de recuperação de senha');
+                return;
+            }
+            
+            const email = document.getElementById('resetEmail').value;
+            
+            if (!email) {
+                alert('❌ Digite seu email');
+                return;
+            }
+            
+            showLoading(true);
+            
+            try {
+                const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
+                    redirectTo: window.location.origin + '/reset-password'
+                });
+                
+                if (error) throw error;
+                
+                alert('✅ Link de recuperação enviado para seu email!');
+                showLoginForm();
+                
+            } catch (error) {
+                alert(`❌ Erro: ${error.message}`);
+            } finally {
+                showLoading(false);
+            }
+        }
+        
+        // Fechar modal clicando fora
+        window.onclick = function(event) {
+            const modal = document.getElementById('loginModal');
+            if (event.target === modal) {
+                closeModal();
+            }
+        }
+
         // Smooth scroll
         document.querySelectorAll('a[href^="#"]').forEach(anchor => {
             anchor.addEventListener('click', function (e) {
