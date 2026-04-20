@@ -1,13 +1,326 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="pt-BR">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Painel de Vendas</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Venda Fácil - Sistema PDV</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            color: white;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .container {
+            text-align: center;
+            max-width: 900px;
+            padding: 2rem;
+        }
+        
+        .logo {
+            font-size: 3.5rem;
+            font-weight: bold;
+            margin-bottom: 1rem;
+            background: linear-gradient(45deg, #ef4444, #f97316);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .subtitle {
+            font-size: 1.3rem;
+            color: #94a3b8;
+            margin-bottom: 3rem;
+        }
+        
+        .hero-section {
+            background: rgba(30, 41, 59, 0.5);
+            border: 1px solid #334155;
+            border-radius: 1rem;
+            padding: 3rem;
+            margin-bottom: 3rem;
+        }
+        
+        .hero-title {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 1rem;
+            color: #f1f5f9;
+        }
+        
+        .hero-desc {
+            font-size: 1.1rem;
+            color: #94a3b8;
+            line-height: 1.6;
+            margin-bottom: 2rem;
+        }
+        
+        .systems {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-bottom: 3rem;
+        }
+        
+        .system-card {
+            background: rgba(30, 41, 59, 0.5);
+            border: 1px solid #334155;
+            border-radius: 1rem;
+            padding: 2rem;
+            transition: all 0.3s ease;
+        }
+        
+        .system-card:hover {
+            transform: translateY(-5px);
+            border-color: #ef4444;
+            box-shadow: 0 10px 25px rgba(239, 68, 68, 0.2);
+        }
+        
+        .system-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 1rem;
+        }
+        
+        .system-desc {
+            color: #94a3b8;
+            margin-bottom: 1.5rem;
+            line-height: 1.6;
+        }
+        
+        .btn {
+            display: inline-block;
+            padding: 0.75rem 2rem;
+            background: #ef4444;
+            color: white;
+            text-decoration: none;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
+        }
+        
+        .btn:hover {
+            background: #dc2626;
+            transform: translateY(-2px);
+        }
+        
+        .btn-secondary {
+            background: #1e293b;
+            border: 1px solid #334155;
+        }
+        
+        .btn-secondary:hover {
+            background: #334155;
+        }
+        
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+            margin-top: 3rem;
+        }
+        
+        .feature {
+            background: rgba(30, 41, 59, 0.3);
+            padding: 1.5rem;
+            border-radius: 0.75rem;
+            border-left: 4px solid #ef4444;
+            transition: transform 0.3s ease;
+        }
+        
+        .feature:hover {
+            transform: translateX(5px);
+        }
+        
+        .feature-title {
+            font-weight: 600;
+            margin-bottom: 0.75rem;
+            font-size: 1.1rem;
+        }
+        
+        .feature-desc {
+            color: #94a3b8;
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+        
+        .github-section {
+            margin-top: 4rem;
+            padding-top: 2rem;
+            border-top: 1px solid #334155;
+        }
+        
+        .github-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: #ef4444;
+            text-decoration: none;
+            font-weight: 600;
+            transition: color 0.3s ease;
+        }
+        
+        .github-link:hover {
+            color: #dc2626;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            background: #059669;
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 1rem;
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-left: 1rem;
+        }
+        
+        @media (max-width: 768px) {
+            .systems {
+                grid-template-columns: 1fr;
+            }
+            
+            .features {
+                grid-template-columns: 1fr;
+            }
+            
+            .logo {
+                font-size: 2.5rem;
+            }
+            
+            .hero-title {
+                font-size: 1.5rem;
+            }
+            
+            .container {
+                padding: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">💰 Venda Fácil</div>
+        <div class="subtitle">Sistema PDV Completo para Empresas <span class="status-badge">✅ Online</span></div>
+        
+        <div class="hero-section">
+            <div class="hero-title">🚀 Solução SaaS B2B Completa</div>
+            <div class="hero-desc">
+                Transforme seu negócio em uma plataforma de vendas para empresas. 
+                Gerencie múltiplas lojas, controle vendas em tempo real e gere receita recorrente 
+                através de mensalidades. Sistema completo com PDV, gestão de estoque e relatórios.
+            </div>
+        </div>
+        
+        <div class="systems">
+            <div class="system-card">
+                <div class="system-title">🏪 Sistema Cliente</div>
+                <div class="system-desc">
+                    PDV completo para lojas e empresas. Gestão de vendas, produtos, vendedores e relatórios em tempo real.
+                    Controle de estoque automático e múltiplas formas de pagamento.
+                </div>
+                <button class="btn" onclick="showInstructions('cliente')">
+                    Como Usar PDV
+                </button>
+            </div>
+            
+            <div class="system-card">
+                <div class="system-title">🏢 Sistema Admin</div>
+                <div class="system-desc">
+                    Painel administrativo para gerenciar múltiplas empresas clientes. Controle total do seu negócio SaaS
+                    com dashboard consolidado e gestão de planos.
+                </div>
+                <button class="btn btn-secondary" onclick="showInstructions('admin')">
+                    Como Usar Admin
+                </button>
+            </div>
+        </div>
+        
+        <div class="features">
+            <div class="feature">
+                <div class="feature-title">🛒 PDV Completo</div>
+                <div class="feature-desc">Carrinho intuitivo, descontos, troco automático, múltiplas formas de pagamento</div>
+            </div>
+            
+            <div class="feature">
+                <div class="feature-title">📦 Gestão de Estoque</div>
+                <div class="feature-desc">Controle automático, alertas de estoque baixo, categorização de produtos</div>
+            </div>
+            
+            <div class="feature">
+                <div class="feature-title">👥 Multi-tenant</div>
+                <div class="feature-desc">Isolamento completo entre empresas, dados seguros e privados</div>
+            </div>
+            
+            <div class="feature">
+                <div class="feature-title">📊 Relatórios</div>
+                <div class="feature-desc">Dashboard em tempo real, KPIs, estatísticas por vendedor e produto</div>
+            </div>
+            
+            <div class="feature">
+                <div class="feature-title">💳 Formas de Pagamento</div>
+                <div class="feature-desc">Dinheiro, cartão, PIX, configurável por empresa</div>
+            </div>
+            
+            <div class="feature">
+                <div class="feature-title">🔐 Tipos de Acesso</div>
+                <div class="feature-desc">Compartilhado (shopping) ou individual (loja especializada)</div>
+            </div>
+        </div>
+        
+        <div class="github-section">
+            <p style="color: #64748b; margin-bottom: 1rem;">
+                <strong>💡 Para desenvolvedores:</strong> Clone o repositório, configure o Supabase e rode localmente.
+            </p>
+            <a href="https://github.com/flowny-2026/venda_facil" class="github-link" target="_blank">
+                📁 Ver código completo no GitHub →
+            </a>
+            <p style="color: #64748b; margin-top: 1rem; font-size: 0.9rem;">
+                React + TypeScript + Vite + Tailwind CSS + Supabase
+            </p>
+        </div>
+    </div>
+
+    <script>
+        function showInstructions(type) {
+            if (type === 'cliente') {
+                alert(`🏪 SISTEMA CLIENTE (PDV)\n\n` +
+                      `Para usar localmente:\n` +
+                      `1. Clone: git clone https://github.com/flowny-2026/venda_facil.git\n` +
+                      `2. Configure Supabase (.env)\n` +
+                      `3. Execute: npm install && npm run dev\n` +
+                      `4. Acesse: http://localhost:5173\n\n` +
+                      `Funcionalidades:\n` +
+                      `• PDV com carrinho\n` +
+                      `• Gestão de produtos\n` +
+                      `• Cadastro de vendedores\n` +
+                      `• Relatórios em tempo real`);
+            } else {
+                alert(`🏢 SISTEMA ADMIN\n\n` +
+                      `Para usar localmente:\n` +
+                      `1. Clone o repositório\n` +
+                      `2. Configure Supabase\n` +
+                      `3. Execute: cd admin-system && npm install && npm run dev\n` +
+                      `4. Acesse: http://localhost:5180\n\n` +
+                      `Funcionalidades:\n` +
+                      `• Gestão de empresas\n` +
+                      `• Dashboard consolidado\n` +
+                      `• Controle de planos\n` +
+                      `• Estatísticas multi-empresa`);
+            }
+        }
+    </script>
+</body>
 </html>
