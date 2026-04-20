@@ -491,19 +491,22 @@
         const SUPABASE_URL = 'https://cvmjjzhvdmpbxquxepue.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_oALu383a0a883HK9BDl-_w_E9Y6kN2n';
         
-        let supabase = null;
-        
-        // Inicializar Supabase quando disponível
-        if (window.supabase) {
-            try {
-                supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-                console.log('✅ Supabase inicializado');
-            } catch (error) {
-                console.error('❌ Erro ao inicializar Supabase:', error);
-            }
-        }
-        
+        let supabaseClient = null;
         let currentLoginType = '';
+        
+        // Inicializar Supabase quando a página carregar
+        window.addEventListener('DOMContentLoaded', function() {
+            if (window.supabase) {
+                try {
+                    supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                    console.log('✅ Supabase inicializado');
+                } catch (error) {
+                    console.error('❌ Erro ao inicializar Supabase:', error);
+                }
+            } else {
+                console.log('⚠️ Supabase não disponível - modo demonstração');
+            }
+        });
         
         function showLogin(type) {
             console.log('🔍 showLogin chamado com tipo:', type);
@@ -574,7 +577,7 @@
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
             
-            if (!supabase) {
+            if (!supabaseClient) {
                 alert('⚠️ Sistema em modo demonstração.\n\nPara usar o sistema completo:\n\n1. Clone o repositório:\ngit clone https://github.com/flowny-2026/venda_facil.git\n\n2. Configure o Supabase (.env)\n\n3. Execute localmente:\nnpm install && npm run dev\n\n4. Acesse: http://localhost:5173');
                 return;
             }
@@ -582,7 +585,7 @@
             showLoading(true);
             
             try {
-                const { data, error } = await supabase.auth.signInWithPassword({
+                const { data, error } = await supabaseClient.auth.signInWithPassword({
                     email: email,
                     password: password
                 });
@@ -591,7 +594,7 @@
                 
                 // Verificar se é admin
                 if (currentLoginType === 'admin') {
-                    const { data: adminData, error: adminError } = await supabase
+                    const { data: adminData, error: adminError } = await supabaseClient
                         .from('admin_users')
                         .select('*')
                         .eq('email', email)
@@ -617,7 +620,7 @@
         async function registerUser() {
             if (currentLoginType !== 'cliente') return;
             
-            if (!supabase) {
+            if (!supabaseClient) {
                 alert('⚠️ Sistema em modo demonstração.\n\nPara criar uma conta:\n\n1. Clone o repositório\n2. Configure o Supabase\n3. Execute localmente\n4. Crie sua conta no sistema');
                 return;
             }
@@ -639,7 +642,7 @@
             showLoading(true);
             
             try {
-                const { data, error } = await supabase.auth.signUp({
+                const { data, error } = await supabaseClient.auth.signUp({
                     email: email,
                     password: password
                 });
@@ -658,7 +661,7 @@
         
         // Recuperação de senha
         async function sendPasswordReset() {
-            if (!supabase) {
+            if (!supabaseClient) {
                 alert('⚠️ Sistema em modo demonstração.\n\nPara recuperar sua senha:\n\n1. Clone o repositório\n2. Configure o Supabase\n3. Execute localmente\n4. Use a função de recuperação de senha');
                 return;
             }
@@ -673,7 +676,7 @@
             showLoading(true);
             
             try {
-                const { error } = await supabase.auth.resetPasswordForEmail(email, {
+                const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
                     redirectTo: window.location.origin + '/reset-password'
                 });
                 
