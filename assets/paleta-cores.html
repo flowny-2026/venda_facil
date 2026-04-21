@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Paleta de Cores - VendaFácil</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: #f5f5f5;
+            padding: 2rem;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 3rem;
+            border-radius: 16px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            color: #0B3C8C;
+            margin-bottom: 0.5rem;
+            font-size: 2.5rem;
+        }
+        
+        .subtitle {
+            color: #6C757D;
+            margin-bottom: 3rem;
+            font-size: 1.2rem;
+        }
+        
+        .section {
+            margin-bottom: 3rem;
+        }
+        
+        .section-title {
+            color: #0B3C8C;
+            font-size: 1.5rem;
+            margin-bottom: 1.5rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 3px solid #4CAF50;
+        }
+        
+        .color-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .color-card {
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            overflow: hidden;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .color-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+        }
+        
+        .color-preview {
+            height: 150px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+            color: white;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .color-info {
+            padding: 1.5rem;
+            background: white;
+        }
+        
+        .color-name {
+            font-weight: 700;
+            font-size: 1.1rem;
+            color: #1a1a1a;
+            margin-bottom: 0.5rem;
+        }
+        
+        .color-codes {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        
+        .color-code {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem;
+            background: #f8f9fa;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+        }
+        
+        .copy-btn {
+            background: #0B3C8C;
+            color: white;
+            border: none;
+            padding: 0.25rem 0.75rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: background 0.3s ease;
+        }
+        
+        .copy-btn:hover {
+            background: #4CAF50;
+        }
+        
+        .usage {
+            margin-top: 0.75rem;
+            padding-top: 0.75rem;
+            border-top: 1px solid #e0e0e0;
+            font-size: 0.85rem;
+            color: #6C757D;
+        }
+        
+        .combinations {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+        }
+        
+        .combo-card {
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        
+        .combo-preview {
+            height: 120px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            font-weight: 700;
+        }
+        
+        .combo-info {
+            padding: 1.5rem;
+            background: white;
+        }
+        
+        .combo-title {
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin-bottom: 0.5rem;
+            color: #0B3C8C;
+        }
+        
+        .combo-desc {
+            font-size: 0.9rem;
+            color: #6C757D;
+            margin-bottom: 1rem;
+        }
+        
+        .combo-colors {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+        
+        .combo-color {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            border: 2px solid white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        .gradient-preview {
+            height: 100px;
+            border-radius: 12px;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 700;
+            font-size: 1.5rem;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .download-section {
+            background: linear-gradient(135deg, #0B3C8C, #4CAF50);
+            padding: 2rem;
+            border-radius: 12px;
+            color: white;
+            text-align: center;
+        }
+        
+        .download-btn {
+            background: #FF7A00;
+            color: white;
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 1rem;
+            transition: all 0.3s ease;
+        }
+        
+        .download-btn:hover {
+            background: #E66D00;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(0,0,0,0.3);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎨 Paleta de Cores VendaFácil</h1>
+        <p class="subtitle">Cores perfeitas para o seu logo e identidade visual</p>
+        
+        <!-- Cores Principais -->
+        <div class="section">
+            <h2 class="section-title">Cores Principais</h2>
+            <div class="color-grid">
+                <div class="color-card">
+                    <div class="color-preview" style="background: #0B3C8C;">💼</div>
+                    <div class="color-info">
+                        <div class="color-name">Azul Principal</div>
+                        <div class="color-codes">
+                            <div class="color-code">
+                                <span>HEX: #0B3C8C</span>
+                                <button class="copy-btn" onclick="copyToClipboard('#0B3C8C')">Copiar</button>
+                            </div>
+                            <div class="color-code">
+                                <span>RGB: 11, 60, 140</span>
+                                <button class="copy-btn" onclick="copyToClipboard('rgb(11, 60, 140)')">Copiar</button>
+                            </div>
+                        </div>
+                        <div class="usage">
+                            <strong>Uso:</strong> Logo principal, texto, ícones, fundos
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="color-card">
+                    <div class="color-preview" style="background: #4CAF50;">💰</div>
+                    <div class="color-info">
+                        <div class="color-name">Verde Sucesso</div>
+                        <div class="color-codes">
+                            <div class="color-code">
+                                <span>HEX: #4CAF50</span>
+                                <button class="copy-btn" onclick="copyToClipboard('#4CAF50')">Copiar</button>
+                            </div>
+                            <div class="color-code">
+                                <span>RGB: 76, 175, 80</span>
+                                <button class="copy-btn" onclick="copyToClipboard('rgb(76, 175, 80)')">Copiar</button>
+                            </div>
+                        </div>
+                        <div class="usage">
+                            <strong>Uso:</strong> Ícones, valores positivos, destaques
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="color-card">
+                    <div class="color-preview" style="background: #FF7A00;">🚀</div>
+                    <div class="color-info">
+                        <div class="color-name">Laranja Vibrante</div>
+                        <div class="color-codes">
+                            <div class="color-code">
+                                <span>HEX: #FF7A00</span>
+                                <button class="copy-btn" onclick="copyToClipboard('#FF7A00')">Copiar</button>
+                            </div>
+                            <div class="color-code">
+                                <span>RGB: 255, 122, 0</span>
+                                <button class="copy-btn" onclick="copyToClipboard('rgb(255, 122, 0)')">Copiar</button>
+                            </div>
+                        </div>
+                        <div class="usage">
+                            <strong>Uso:</strong> CTAs, botões, elementos de ação
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Cores Complementares -->
+        <div class="section">
+            <h2 class="section-title">Cores Complementares</h2>
+            <div class="color-grid">
+                <div class="color-card">
+                    <div class="color-preview" style="background: #0F172A;">🌙</div>
+                    <div class="color-info">
+                        <div class="color-name">Azul Muito Escuro</div>
+                        <div class="color-codes">
+                            <div class="color-code">
+                                <span>HEX: #0F172A</span>
+                                <button class="copy-btn" onclick="copyToClipboard('#0F172A')">Copiar</button>
+                            </div>
+                        </div>
+                        <div class="usage">
+                            <strong>Uso:</strong> Fundos escuros, contraste
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="color-card">
+                    <div class="color-preview" style="background: #FFFFFF; color: #0B3C8C; border: 2px solid #e0e0e0;">☀️</div>
+                    <div class="color-info">
+                        <div class="color-name">Branco</div>
+                        <div class="color-codes">
+                            <div class="color-code">
+                                <span>HEX: #FFFFFF</span>
+                                <button class="copy-btn" onclick="copyToClipboard('#FFFFFF')">Copiar</button>
+                            </div>
+                        </div>
+                        <div class="usage">
+                            <strong>Uso:</strong> Fundos claros, texto em escuro
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="color-card">
+                    <div class="color-preview" style="background: #6C757D;">📝</div>
+                    <div class="color-info">
+                        <div class="color-name">Cinza Médio</div>
+                        <div class="color-codes">
+                            <div class="color-code">
+                                <span>HEX: #6C757D</span>
+                                <button class="copy-btn" onclick="copyToClipboard('#6C757D')">Copiar</button>
+                            </div>
+                        </div>
+                        <div class="usage">
+                            <strong>Uso:</strong> Texto secundário, descrições
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Combinações -->
+        <div class="section">
+            <h2 class="section-title">Combinações Recomendadas</h2>
+            <div class="combinations">
+                <div class="combo-card">
+                    <div class="combo-preview" style="background: #0B3C8C; color: white;">
+                        VendaFácil
+                    </div>
+                    <div class="combo-info">
+                        <div class="combo-title">Profissional e Confiável</div>
+                        <div class="combo-desc">Ideal para logo principal e versão corporativa</div>
+                        <div class="combo-colors">
+                            <div class="combo-color" style="background: #0B3C8C;" title="#0B3C8C"></div>
+                            <div class="combo-color" style="background: #4CAF50;" title="#4CAF50"></div>
+                            <div class="combo-color" style="background: #FFFFFF; border: 2px solid #ccc;" title="#FFFFFF"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="combo-card">
+                    <div class="combo-preview" style="background: #FF7A00; color: white;">
+                        VendaFácil
+                    </div>
+                    <div class="combo-info">
+                        <div class="combo-title">Moderna e Energética</div>
+                        <div class="combo-desc">Ideal para marketing e redes sociais</div>
+                        <div class="combo-colors">
+                            <div class="combo-color" style="background: #0B3C8C;" title="#0B3C8C"></div>
+                            <div class="combo-color" style="background: #FF7A00;" title="#FF7A00"></div>
+                            <div class="combo-color" style="background: #4CAF50;" title="#4CAF50"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="combo-card">
+                    <div class="combo-preview" style="background: white; color: #0B3C8C; border: 2px solid #0B3C8C;">
+                        VendaFácil
+                    </div>
+                    <div class="combo-info">
+                        <div class="combo-title">Minimalista e Clean</div>
+                        <div class="combo-desc">Ideal para favicon e versão simplificada</div>
+                        <div class="combo-colors">
+                            <div class="combo-color" style="background: #0B3C8C;" title="#0B3C8C"></div>
+                            <div class="combo-color" style="background: #FFFFFF; border: 2px solid #ccc;" title="#FFFFFF"></div>
+                            <div class="combo-color" style="background: #4CAF50;" title="#4CAF50"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Gradientes -->
+        <div class="section">
+            <h2 class="section-title">Gradientes Modernos</h2>
+            <div class="gradient-preview" style="background: linear-gradient(135deg, #0B3C8C 0%, #4CAF50 100%);">
+                Azul → Verde
+            </div>
+            <div class="gradient-preview" style="background: linear-gradient(135deg, #0B3C8C 0%, #FF7A00 100%);">
+                Azul → Laranja
+            </div>
+            <div class="gradient-preview" style="background: linear-gradient(135deg, #0F172A 0%, #0B3C8C 100%);">
+                Escuro → Azul
+            </div>
+        </div>
+        
+        <!-- Download -->
+        <div class="download-section">
+            <h2 style="margin-bottom: 1rem;">📥 Baixe a Paleta Completa</h2>
+            <p>Arquivo com todas as cores em diversos formatos</p>
+            <button class="download-btn" onclick="downloadPalette()">Baixar Paleta (TXT)</button>
+        </div>
+    </div>
+    
+    <script>
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                alert('✅ Copiado: ' + text);
+            });
+        }
+        
+        function downloadPalette() {
+            const content = `
+PALETA DE CORES - VENDAFÁCIL
+========================================
+
+CORES PRINCIPAIS:
+- Azul Principal: #0B3C8C | RGB(11, 60, 140)
+- Verde Sucesso: #4CAF50 | RGB(76, 175, 80)
+- Laranja Vibrante: #FF7A00 | RGB(255, 122, 0)
+
+CORES COMPLEMENTARES:
+- Azul Muito Escuro: #0F172A | RGB(15, 23, 42)
+- Branco: #FFFFFF | RGB(255, 255, 255)
+- Cinza Médio: #6C757D | RGB(108, 117, 125)
+
+GRADIENTES:
+- Azul → Verde: linear-gradient(135deg, #0B3C8C 0%, #4CAF50 100%)
+- Azul → Laranja: linear-gradient(135deg, #0B3C8C 0%, #FF7A00 100%)
+- Escuro → Azul: linear-gradient(135deg, #0F172A 0%, #0B3C8C 100%)
+
+CSS VARIABLES:
+:root {
+  --primary-blue: #0B3C8C;
+  --primary-green: #4CAF50;
+  --primary-orange: #FF7A00;
+  --dark-blue: #0F172A;
+  --white: #FFFFFF;
+  --gray: #6C757D;
+}
+
+========================================
+VendaFácil - Sistema PDV Completo
+            `;
+            
+            const blob = new Blob([content], { type: 'text/plain' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'paleta-cores-vendafacil.txt';
+            a.click();
+            window.URL.revokeObjectURL(url);
+        }
+    </script>
+</body>
+</html>
