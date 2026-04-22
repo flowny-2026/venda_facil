@@ -1249,7 +1249,7 @@
                     const { data: adminData, error: adminError } = await supabaseClient
                         .from('admin_users')
                         .select('*')
-                        .eq('email', email)
+                        .eq('user_id', data.user.id)
                         .single();
                     
                     if (adminError || !adminData) {
