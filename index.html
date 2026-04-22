@@ -7,21 +7,21 @@
     <meta name="description" content="Transforme suas vendas com o sistema PDV mais fácil e completo do mercado. Gestão de estoque, vendedores e relatórios em tempo real.">
     
     <!-- Favicon -->
-    <link rel="icon" type="image/jpeg" href="assets/images/logo.jpg">
-    <link rel="apple-touch-icon" href="assets/images/logo.jpg">
+    <link rel="icon" type="image/png" href="assets/images/logo-transparente.png">
+    <link rel="apple-touch-icon" href="assets/images/logo-transparente.png">
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://flowny-2026.github.io/venda_facil/">
     <meta property="og:title" content="VendaFácil - Sistema PDV Completo">
     <meta property="og:description" content="Transforme suas vendas com o sistema PDV mais fácil e completo do mercado.">
-    <meta property="og:image" content="https://flowny-2026.github.io/venda_facil/assets/images/logo.jpg">
+    <meta property="og:image" content="https://flowny-2026.github.io/venda_facil/assets/images/logo-transparente.png">
     
     <!-- Twitter -->
     <meta property="twitter:card" content="summary_large_image">
     <meta property="twitter:url" content="https://flowny-2026.github.io/venda_facil/">
     <meta property="twitter:title" content="VendaFácil - Sistema PDV Completo">
     <meta property="twitter:description" content="Transforme suas vendas com o sistema PDV mais fácil e completo do mercado.">
-    <meta property="twitter:image" content="https://flowny-2026.github.io/venda_facil/assets/images/logo.jpg">
+    <meta property="twitter:image" content="https://flowny-2026.github.io/venda_facil/assets/images/logo-transparente.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -82,9 +82,14 @@
         }
         
         .logo-img {
-            height: 50px;
+            height: 45px;
             width: auto;
             object-fit: contain;
+            transition: transform 0.3s ease;
+        }
+        
+        .logo-img:hover {
+            transform: scale(1.05);
         }
         
         .logo-text {
@@ -93,7 +98,7 @@
         
         @media (max-width: 768px) {
             .logo-img {
-                height: 40px;
+                height: 35px;
             }
         }
         
@@ -766,7 +771,7 @@
     <header>
         <nav>
             <div class="logo">
-                <img src="assets/images/logo.jpg" alt="VendaFácil" class="logo-img">
+                <img src="assets/images/logo-transparente.png" alt="VendaFácil" class="logo-img">
             </div>
             <ul class="nav-links">
                 <li><a href="#beneficios">Benefícios</a></li>
