@@ -1199,9 +1199,19 @@
         
         // Limpar formulários
         function clearForms() {
-            document.getElementById('loginForm').reset();
-            document.getElementById('forgotPasswordForm').reset();
-            document.getElementById('registerForm').reset();
+            const loginForm = document.getElementById('loginForm');
+            if (loginForm) loginForm.reset();
+            
+            // Limpar campos dos outros formulários manualmente
+            const resetEmail = document.getElementById('resetEmail');
+            if (resetEmail) resetEmail.value = '';
+            
+            const regEmail = document.getElementById('regEmail');
+            const regPassword = document.getElementById('regPassword');
+            const regConfirmPassword = document.getElementById('regConfirmPassword');
+            if (regEmail) regEmail.value = '';
+            if (regPassword) regPassword.value = '';
+            if (regConfirmPassword) regConfirmPassword.value = '';
         }
         
         // Mostrar loading
@@ -1344,9 +1354,17 @@
         // Smooth scroll
         document.querySelectorAll('a[href^="#"]').forEach(anchor => {
             anchor.addEventListener('click', function (e) {
-                e.preventDefault();
-                const target = document.querySelector(this.getAttribute('href'));
+                const href = this.getAttribute('href');
+                
+                // Ignorar links vazios ou apenas "#"
+                if (!href || href === '#' || href === '#!') {
+                    e.preventDefault();
+                    return;
+                }
+                
+                const target = document.querySelector(href);
                 if (target) {
+                    e.preventDefault();
                     target.scrollIntoView({ behavior: 'smooth', block: 'start' });
                 }
             });
