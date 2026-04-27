@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { X, Mail, Lock, User, ArrowLeft } from 'lucide-react'
+import { X, Mail, Lock, ArrowLeft } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 
 interface AuthModalProps {
@@ -8,16 +8,24 @@ interface AuthModalProps {
 }
 
 export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
-  const [mode, setMode] = useState<'login' | 'register' | 'forgot'>('login')
+  const [mode, setMode] = useState<'login' | 'forgot'>('login')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [fullName, setFullName] = useState('')
-  const [companyName, setCompanyName] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
 
-  const { signIn, signUp, resetPassword } = useAuth()
+  const { signIn, resetPassword } = useAuth()
+
+  // Limpar campos quando o modal abrir
+  const handleClose = () => {
+    setEmail('')
+    setPassword('')
+    setError('')
+    setSuccess('')
+    setMode('login')
+    onClose()
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -29,11 +37,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
       if (mode === 'login') {
         const { error } = await signIn(email, password)
         if (error) throw error
-        onClose()
-      } else if (mode === 'register') {
-        const { error } = await signUp(email, password, fullName, companyName)
-        if (error) throw error
-        setSuccess('Verifique seu email para confirmar a conta!')
+        handleClose()
       } else if (mode === 'forgot') {
         const { error } = await resetPassword(email)
         if (error) throw error
@@ -49,7 +53,6 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
   const getTitle = () => {
     switch (mode) {
       case 'login': return 'Entrar'
-      case 'register': return 'Criar Conta'
       case 'forgot': return 'Recuperar Senha'
       default: return 'Entrar'
     }
@@ -59,7 +62,6 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
     if (loading) return 'Carregando...'
     switch (mode) {
       case 'login': return 'Entrar'
-      case 'register': return 'Criar Conta'
       case 'forgot': return 'Enviar Email'
       default: return 'Entrar'
     }
@@ -83,7 +85,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
             <h2 className="text-xl font-semibold text-slate-100">{getTitle()}</h2>
           </div>
           <button
-            onClick={onClose}
+            onClick={handleClose}
             className="p-1 text-slate-400 hover:text-slate-200 rounded-lg hover:bg-slate-800"
           >
             <X className="w-5 h-5" />
@@ -103,43 +105,6 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {mode === 'register' && (
-            <>
-              <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">
-                  Nome Completo
-                </label>
-                <div className="relative">
-                  <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
-                  <input
-                    type="text"
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    className="w-full bg-slate-800/50 border border-slate-700 rounded-lg pl-10 pr-4 py-2 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
-                    placeholder="Seu nome completo"
-                    required
-                  />
-                </div>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">
-                  Nome da Empresa
-                </label>
-                <div className="relative">
-                  <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
-                  <input
-                    type="text"
-                    value={companyName}
-                    onChange={(e) => setCompanyName(e.target.value)}
-                    className="w-full bg-slate-800/50 border border-slate-700 rounded-lg pl-10 pr-4 py-2 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
-                    placeholder="Nome da sua empresa"
-                  />
-                </div>
-              </div>
-            </>
-          )}
-
           <div>
             <label className="block text-sm font-medium text-slate-300 mb-2">
               Email
@@ -152,6 +117,10 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
                 onChange={(e) => setEmail(e.target.value)}
                 className="w-full bg-slate-800/50 border border-slate-700 rounded-lg pl-10 pr-4 py-2 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
                 placeholder="seu@email.com"
+                autoComplete="email"
+                autoCorrect="off"
+                autoCapitalize="off"
+                spellCheck="false"
                 required
               />
             </div>
@@ -170,6 +139,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
                   onChange={(e) => setPassword(e.target.value)}
                   className="w-full bg-slate-800/50 border border-slate-700 rounded-lg pl-10 pr-4 py-2 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
                   placeholder="••••••••"
+                  autoComplete="current-password"
                   required
                   minLength={6}
                 />
@@ -195,24 +165,12 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
               >
                 Esqueci minha senha
               </button>
-              <div>
-                <button
-                  onClick={() => setMode('register')}
-                  className="text-sm text-slate-400 hover:text-slate-200"
-                >
-                  Não tem conta? Criar uma
-                </button>
+              <div className="mt-4 pt-4 border-t border-slate-700">
+                <p className="text-xs text-slate-500">
+                  🔒 Não tem conta? Entre em contato com o administrador
+                </p>
               </div>
             </>
-          )}
-
-          {mode === 'register' && (
-            <button
-              onClick={() => setMode('login')}
-              className="text-sm text-slate-400 hover:text-slate-200"
-            >
-              Já tem conta? Entrar
-            </button>
           )}
 
           {mode === 'forgot' && (

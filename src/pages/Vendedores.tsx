@@ -11,8 +11,10 @@ import {
   Trash2,
   RefreshCw,
   CheckCircle,
-  XCircle
+  XCircle,
+  Key
 } from 'lucide-react';
+import CreateSellerLoginModal from '../components/CreateSellerLoginModal';
 
 interface Seller {
   id: string;
@@ -24,13 +26,17 @@ interface Seller {
   monthly_goal: number;
   active: boolean;
   created_at: string;
+  has_login?: boolean;
 }
 
 export default function Vendedores() {
   const [sellers, setSellers] = useState<Seller[]>([]);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingSeller, setEditingSeller] = useState<Seller | null>(null);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [selectedSellerForLogin, setSelectedSellerForLogin] = useState<Seller | null>(null);
   const [newSeller, setNewSeller] = useState({
     name: '',
     email: '',
@@ -46,13 +52,29 @@ export default function Vendedores() {
 
   const loadSellers = async () => {
     try {
-      const { data, error } = await supabase
+      // Carregar vendedores
+      const { data: sellersData, error: sellersError } = await supabase
         .from('sellers')
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      setSellers(data || []);
+      if (sellersError) throw sellersError;
+
+      // Verificar quais vendedores têm login
+      const { data: companyUsersData } = await supabase
+        .from('company_users')
+        .select('seller_id')
+        .not('seller_id', 'is', null);
+
+      const sellersWithLogin = new Set(companyUsersData?.map(cu => cu.seller_id) || []);
+
+      // Adicionar flag has_login
+      const sellersWithLoginFlag = (sellersData || []).map(seller => ({
+        ...seller,
+        has_login: sellersWithLogin.has(seller.id)
+      }));
+
+      setSellers(sellersWithLoginFlag);
     } catch (error) {
       console.error('Erro ao carregar vendedores:', error);
     } finally {
@@ -63,19 +85,33 @@ export default function Vendedores() {
   const handleAddSeller = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Prevenir múltiplos cliques
+    if (saving) return;
+    
     try {
+      setSaving(true);
+      
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         alert('Usuário não autenticado');
         return;
       }
 
-      // Usar o ID do usuário como company_id se não houver empresa definida
-      let companyId = localStorage.getItem('company_id');
-      if (!companyId) {
-        companyId = user.id;
-        localStorage.setItem('company_id', companyId);
+      // Buscar company_id correto do banco de dados
+      const { data: companyUserData, error: companyError } = await supabase
+        .from('company_users')
+        .select('company_id')
+        .eq('user_id', user.id)
+        .eq('active', true)
+        .single();
+
+      if (companyError || !companyUserData) {
+        alert('Erro: Usuário não está vinculado a nenhuma empresa');
+        console.error('Erro ao buscar empresa:', companyError);
+        return;
       }
+
+      const companyId = companyUserData.company_id;
       
       const { data, error } = await supabase
         .from('sellers')
@@ -89,21 +125,25 @@ export default function Vendedores() {
 
       if (error) throw error;
 
-      setSellers(prev => [data, ...prev]);
+      setSellers(prev => [{ ...data, has_login: false }, ...prev]);
       setShowAddModal(false);
       resetForm();
       alert('Vendedor cadastrado com sucesso!');
     } catch (error: any) {
       console.error('Erro ao cadastrar vendedor:', error);
       alert('Erro ao cadastrar vendedor: ' + error.message);
+    } finally {
+      setSaving(false);
     }
   };
 
   const handleEditSeller = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!editingSeller) return;
+    if (!editingSeller || saving) return;
     
     try {
+      setSaving(true);
+      
       const { data, error } = await supabase
         .from('sellers')
         .update(newSeller)
@@ -115,7 +155,7 @@ export default function Vendedores() {
 
       setSellers(prev => 
         prev.map(seller => 
-          seller.id === editingSeller.id ? data : seller
+          seller.id === editingSeller.id ? { ...data, has_login: seller.has_login } : seller
         )
       );
       
@@ -125,6 +165,8 @@ export default function Vendedores() {
     } catch (error: any) {
       console.error('Erro ao atualizar vendedor:', error);
       alert('Erro ao atualizar vendedor: ' + error.message);
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -196,6 +238,20 @@ export default function Vendedores() {
     setShowAddModal(false);
     setEditingSeller(null);
     resetForm();
+  };
+
+  const openLoginModal = (seller: Seller) => {
+    setSelectedSellerForLogin(seller);
+    setShowLoginModal(true);
+  };
+
+  const closeLoginModal = () => {
+    setShowLoginModal(false);
+    setSelectedSellerForLogin(null);
+  };
+
+  const handleLoginSuccess = () => {
+    loadSellers(); // Recarregar lista para atualizar status de login
   };
 
   const formatCurrency = (value: number) => {
@@ -312,6 +368,7 @@ export default function Vendedores() {
                   <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase">Contato</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase">Comissão</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase">Meta Mensal</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase">Login</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase">Status</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase">Ações</th>
                 </tr>
@@ -340,6 +397,22 @@ export default function Vendedores() {
                       <span className="text-sm font-medium text-slate-200">
                         {formatCurrency(seller.monthly_goal)}
                       </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      {seller.has_login ? (
+                        <div className="flex items-center gap-1 text-green-400">
+                          <CheckCircle className="w-4 h-4" />
+                          <span className="text-sm">Configurado</span>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => openLoginModal(seller)}
+                          className="flex items-center gap-1 px-3 py-1 bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 rounded-lg text-sm transition-colors"
+                        >
+                          <Key className="w-3 h-3" />
+                          Criar Login
+                        </button>
+                      )}
                     </td>
                     <td className="px-6 py-4">
                       <div className={`flex items-center gap-1 ${seller.active ? 'text-green-400' : 'text-red-400'}`}>
@@ -464,19 +537,30 @@ export default function Vendedores() {
                   type="button"
                   onClick={closeModal}
                   className="flex-1 px-4 py-2 border border-slate-700 text-slate-300 rounded-lg hover:bg-slate-800/50 transition-colors"
+                  disabled={saving}
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                  className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={saving}
                 >
-                  {editingSeller ? 'Atualizar' : 'Cadastrar'}
+                  {saving ? 'Salvando...' : (editingSeller ? 'Atualizar' : 'Cadastrar')}
                 </button>
               </div>
             </form>
           </div>
         </div>
+      )}
+
+      {/* Modal Criar Login */}
+      {showLoginModal && selectedSellerForLogin && (
+        <CreateSellerLoginModal
+          seller={selectedSellerForLogin}
+          onClose={closeLoginModal}
+          onSuccess={handleLoginSuccess}
+        />
       )}
     </div>
   );

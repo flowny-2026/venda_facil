@@ -4,6 +4,7 @@ import { RefreshCw, User, Lock } from "lucide-react";
 import Dashboard from "./pages/Dashboard";
 import Clientes from "./pages/Clientes";
 import Vendas from "./pages/Vendas";
+import Leads from "./pages/Leads";
 import Configuracoes from "./pages/Configuracoes";
 import { useState, useEffect } from "react";
 import { supabase } from "./lib/supabase";
@@ -14,11 +15,61 @@ function App() {
   const [loginForm, setLoginForm] = useState({ email: '', password: '' });
   const [loginError, setLoginError] = useState('');
   const [loginLoading, setLoginLoading] = useState(false);
+  const [autoLoginInProgress, setAutoLoginInProgress] = useState(false);
 
   // Verificar se usuário é admin
   useEffect(() => {
     checkAdminStatus();
   }, [user]);
+
+  // Auto-login se houver credenciais salvas e não estiver logado
+  useEffect(() => {
+    const attemptAutoLogin = async () => {
+      // VERIFICAÇÃO 1: Logout intencional?
+      const intentionalLogout = sessionStorage.getItem('intentional_logout');
+      if (intentionalLogout === 'true') {
+        console.log('⏸️ Auto-login desabilitado - logout foi intencional');
+        return;
+      }
+      
+      // VERIFICAÇÃO 2: Credenciais existem?
+      const savedEmail = localStorage.getItem('admin_email');
+      const savedPassword = localStorage.getItem('admin_password');
+      
+      if (!savedEmail || !savedPassword) {
+        console.log('⏸️ Auto-login desabilitado - sem credenciais salvas');
+        return;
+      }
+      
+      // VERIFICAÇÃO 3: Já está tentando ou tem usuário?
+      if (user || authLoading || autoLoginInProgress) {
+        return;
+      }
+      
+      // Tentar auto-login
+      console.log('🔄 Auto-login detectado. Email:', savedEmail);
+      setAutoLoginInProgress(true);
+      
+      try {
+        const { error } = await signIn(savedEmail, savedPassword);
+        if (error) {
+          console.error('❌ Erro no auto-login:', error);
+          localStorage.removeItem('admin_email');
+          localStorage.removeItem('admin_password');
+        } else {
+          console.log('✅ Auto-login realizado com sucesso!');
+        }
+      } catch (err) {
+        console.error('❌ Exceção no auto-login:', err);
+        localStorage.removeItem('admin_email');
+        localStorage.removeItem('admin_password');
+      } finally {
+        setAutoLoginInProgress(false);
+      }
+    };
+
+    attemptAutoLogin();
+  }, [user, authLoading, autoLoginInProgress]);
 
   const checkAdminStatus = async () => {
     if (!user) {
@@ -46,6 +97,16 @@ function App() {
     try {
       const { error } = await signIn(loginForm.email, loginForm.password);
       if (error) throw error;
+      
+      // Limpar flag de logout intencional
+      sessionStorage.removeItem('intentional_logout');
+      
+      // Salvar credenciais para auto-login
+      console.log('💾 Salvando credenciais para auto-login:', loginForm.email);
+      localStorage.setItem('admin_email', loginForm.email);
+      localStorage.setItem('admin_password', loginForm.password);
+      console.log('✅ Credenciais salvas com sucesso!');
+      
     } catch (err: any) {
       setLoginError(err.message || 'Erro ao fazer login');
     } finally {
@@ -54,12 +115,12 @@ function App() {
   };
 
   // Tela de carregamento
-  if (authLoading) {
+  if (authLoading || autoLoginInProgress) {
     return (
       <div className="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center">
         <div className="flex items-center gap-2 text-slate-400">
           <RefreshCw className="w-5 h-5 animate-spin" />
-          Carregando...
+          {autoLoginInProgress ? 'Restaurando sessão...' : 'Carregando...'}
         </div>
       </div>
     );
@@ -144,6 +205,22 @@ function App() {
 
   // Verificar se é admin
   if (!isAdmin) {
+    const savedEmail = localStorage.getItem('admin_email');
+    const savedPassword = localStorage.getItem('admin_password');
+    
+    const handleManualAutoLogin = async () => {
+      if (savedEmail && savedPassword) {
+        setAutoLoginInProgress(true);
+        try {
+          await signIn(savedEmail, savedPassword);
+        } catch (err) {
+          console.error('Erro no login manual:', err);
+        } finally {
+          setAutoLoginInProgress(false);
+        }
+      }
+    };
+    
     return (
       <div className="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center">
         <div className="text-center">
@@ -152,7 +229,16 @@ function App() {
           </div>
           <h1 className="text-2xl font-bold text-red-400 mb-2">Acesso Negado</h1>
           <p className="text-slate-400 mb-4">Você não tem permissão para acessar este sistema.</p>
-          <p className="text-sm text-slate-500">Apenas administradores autorizados podem acessar.</p>
+          <p className="text-sm text-slate-500 mb-6">Apenas administradores autorizados podem acessar.</p>
+          
+          {savedEmail && savedPassword && (
+            <button
+              onClick={handleManualAutoLogin}
+              className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
+            >
+              Tentar Login Novamente
+            </button>
+          )}
         </div>
       </div>
     );
@@ -165,6 +251,7 @@ function App() {
         <Route path="/" element={<Dashboard />} />
         <Route path="/clientes" element={<Clientes />} />
         <Route path="/vendas" element={<Vendas />} />
+        <Route path="/leads" element={<Leads />} />
         <Route path="/configuracoes" element={<Configuracoes />} />
       </Routes>
     </div>

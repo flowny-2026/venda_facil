@@ -8,3 +8,29 @@ body {
   margin: 0;
   padding: 0;
 }
+
+/* Corrigir dropdown de select - opções com fundo escuro */
+select option {
+  background-color: #1e293b;
+  color: #f1f5f9;
+  padding: 0.5rem;
+}
+
+select option:hover,
+select option:focus,
+select option:checked {
+  background-color: #334155;
+  color: #ffffff;
+}
+
+/* Melhorar aparência do select */
+select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%2394a3b8' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3E%3C/svg%3E");
+  background-position: right 0.5rem center;
+  background-repeat: no-repeat;
+  background-size: 1.5em 1.5em;
+  padding-right: 2.5rem;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+}

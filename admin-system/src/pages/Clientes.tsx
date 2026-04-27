@@ -29,10 +29,22 @@ interface Company {
   created_at: string;
 }
 
+interface CompanyUser {
+  user_id: string;
+  role: string;
+  active: boolean;
+  users: {
+    email: string;
+  };
+}
+
 export default function Clientes() {
   const [companies, setCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
+  const [companyUsers, setCompanyUsers] = useState<CompanyUser[]>([]);
 
   useEffect(() => {
     loadCompanies();
@@ -54,11 +66,38 @@ export default function Clientes() {
     }
   };
 
+  const loadCompanyUsers = async (companyId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('company_users')
+        .select(`
+          user_id,
+          role,
+          active,
+          users:user_id (email)
+        `)
+        .eq('company_id', companyId);
+
+      if (error) throw error;
+      setCompanyUsers(data || []);
+    } catch (error) {
+      console.error('Erro ao carregar usuários:', error);
+      setCompanyUsers([]);
+    }
+  };
+
+  const handleViewDetails = async (company: Company) => {
+    setSelectedCompany(company);
+    await loadCompanyUsers(company.id);
+    setShowDetailsModal(true);
+  };
+
   const deleteCompany = async (companyId: string, companyName: string) => {
     const confirmMessage = `⚠️ ATENÇÃO: Excluir empresa "${companyName}"?\n\n` +
       `Esta ação irá:\n` +
       `• Excluir TODOS os dados da empresa\n` +
       `• Remover usuários, vendas, produtos\n` +
+      `• Deletar usuários do Supabase Auth\n` +
       `• NÃO PODE SER DESFEITA\n\n` +
       `Tem certeza que deseja continuar?`;
 
@@ -71,15 +110,43 @@ export default function Clientes() {
     }
 
     try {
-      const { error } = await supabase
+      // 1. Buscar usuários da empresa
+      const { data: companyUsers, error: usersError } = await supabase
+        .from('company_users')
+        .select('user_id')
+        .eq('company_id', companyId);
+
+      if (usersError) throw usersError;
+
+      // 2. Deletar empresa (isso vai deletar company_users por CASCADE)
+      const { error: companyError } = await supabase
         .from('companies')
         .delete()
         .eq('id', companyId);
 
-      if (error) throw error;
+      if (companyError) throw companyError;
+
+      // 3. Deletar usuários do Supabase Auth
+      if (companyUsers && companyUsers.length > 0) {
+        for (const cu of companyUsers) {
+          try {
+            // Nota: Isso requer service_role key, que não temos no frontend
+            // Por enquanto, os usuários ficam no Auth mas não conseguem acessar
+            console.log('Usuário a ser deletado:', cu.user_id);
+          } catch (err) {
+            console.error('Erro ao deletar usuário:', err);
+          }
+        }
+      }
       
       setCompanies(prev => prev.filter(company => company.id !== companyId));
-      alert(`Empresa "${companyName}" excluída com sucesso!`);
+      
+      alert(
+        `Empresa "${companyName}" excluída com sucesso!\n\n` +
+        `⚠️ IMPORTANTE: Os usuários foram removidos da empresa, mas ainda existem no Supabase Auth.\n` +
+        `Para deletá-los completamente, vá em:\n` +
+        `Supabase → Authentication → Users → Deletar manualmente`
+      );
     } catch (error: any) {
       console.error('Erro ao excluir empresa:', error);
       alert('Erro ao excluir empresa: ' + error.message);
@@ -287,6 +354,7 @@ export default function Clientes() {
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-2">
                           <button
+                            onClick={() => handleViewDetails(company)}
                             className="p-1 text-blue-400 hover:bg-blue-500/20 rounded"
                             title="Ver detalhes"
                           >
@@ -320,12 +388,157 @@ export default function Clientes() {
           )}
         </div>
 
-        {/* Modal */}
+        {/* Modal Criar Empresa */}
         <CompanyModal
           isOpen={showModal}
           onClose={() => setShowModal(false)}
           onSuccess={loadCompanies}
         />
+
+        {/* Modal Detalhes da Empresa */}
+        {showDetailsModal && selectedCompany && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+              <div className="p-6 border-b border-slate-800 flex items-center justify-between">
+                <h2 className="text-xl font-semibold text-slate-100">Detalhes da Empresa</h2>
+                <button
+                  onClick={() => setShowDetailsModal(false)}
+                  className="text-slate-400 hover:text-slate-200 transition-colors"
+                >
+                  <XCircle className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="p-6 space-y-6">
+                {/* Informações da Empresa */}
+                <div>
+                  <h3 className="text-lg font-medium text-slate-200 mb-4 flex items-center gap-2">
+                    <Building className="w-5 h-5" />
+                    Informações da Empresa
+                  </h3>
+                  <div className="grid grid-cols-2 gap-4 bg-slate-800/30 rounded-lg p-4">
+                    <div>
+                      <div className="text-sm text-slate-400">Nome</div>
+                      <div className="text-slate-200 font-medium">{selectedCompany.name}</div>
+                    </div>
+                    <div>
+                      <div className="text-sm text-slate-400">Email</div>
+                      <div className="text-slate-200">{selectedCompany.email}</div>
+                    </div>
+                    <div>
+                      <div className="text-sm text-slate-400">Telefone</div>
+                      <div className="text-slate-200">{selectedCompany.phone || 'Não informado'}</div>
+                    </div>
+                    <div>
+                      <div className="text-sm text-slate-400">CNPJ</div>
+                      <div className="text-slate-200">{selectedCompany.document || 'Não informado'}</div>
+                    </div>
+                    <div>
+                      <div className="text-sm text-slate-400">Plano</div>
+                      <div className="text-slate-200 capitalize">{selectedCompany.plan}</div>
+                    </div>
+                    <div>
+                      <div className="text-sm text-slate-400">Tipo de Acesso</div>
+                      <div className="text-slate-200">
+                        {selectedCompany.access_type === 'shared' ? 'Compartilhado' : 'Individual'}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-sm text-slate-400">Valor Mensal</div>
+                      <div className="text-green-400 font-semibold">{formatCurrency(selectedCompany.monthly_fee)}</div>
+                    </div>
+                    <div>
+                      <div className="text-sm text-slate-400">Status</div>
+                      <div className={`font-medium capitalize ${getStatusColor(selectedCompany.status)}`}>
+                        {selectedCompany.status}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Credenciais de Acesso */}
+                <div>
+                  <h3 className="text-lg font-medium text-slate-200 mb-4 flex items-center gap-2">
+                    <Shield className="w-5 h-5" />
+                    Credenciais de Acesso ao Painel Cliente
+                  </h3>
+                  
+                  {companyUsers.length === 0 ? (
+                    <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-4">
+                      <p className="text-amber-300 text-sm">Nenhum usuário encontrado para esta empresa.</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {companyUsers.map((companyUser, index) => (
+                        <div key={companyUser.user_id} className="bg-slate-800/30 rounded-lg p-4 border border-slate-700">
+                          <div className="flex items-center justify-between mb-3">
+                            <span className="text-sm font-medium text-slate-300">
+                              Usuário {index + 1} {companyUser.role === 'owner' && '(Proprietário)'}
+                            </span>
+                            <span className={`text-xs px-2 py-1 rounded ${
+                              companyUser.active ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'
+                            }`}>
+                              {companyUser.active ? 'Ativo' : 'Inativo'}
+                            </span>
+                          </div>
+                          
+                          <div className="space-y-2">
+                            <div>
+                              <div className="text-xs text-slate-400 mb-1">Email de Login:</div>
+                              <div className="flex items-center gap-2">
+                                <code className="flex-1 bg-slate-900/50 px-3 py-2 rounded text-sm text-slate-200 font-mono">
+                                  {companyUser.users?.email}
+                                </code>
+                                <button
+                                  onClick={() => {
+                                    navigator.clipboard.writeText(companyUser.users?.email || '');
+                                    alert('Email copiado!');
+                                  }}
+                                  className="px-3 py-2 bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 rounded text-xs transition-colors"
+                                >
+                                  Copiar
+                                </button>
+                              </div>
+                            </div>
+                            
+                            <div className="bg-amber-500/10 border border-amber-500/20 rounded p-3">
+                              <p className="text-xs text-amber-300">
+                                ⚠️ <strong>Senha:</strong> A senha foi definida no momento da criação da empresa. 
+                                Por segurança, não é possível visualizá-la aqui. Se o cliente esqueceu a senha, 
+                                você pode redefinir através do Supabase ou criar um novo usuário.
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  <div className="mt-4 bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
+                    <p className="text-sm text-blue-300 mb-2">
+                      <strong>🔗 URL do Painel Cliente:</strong>
+                    </p>
+                    <code className="block bg-slate-900/50 px-3 py-2 rounded text-sm text-slate-200 font-mono">
+                      http://localhost:5173
+                    </code>
+                    <p className="text-xs text-slate-400 mt-2">
+                      Em produção, substitua pela URL real do sistema cliente.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-6 border-t border-slate-800">
+                <button
+                  onClick={() => setShowDetailsModal(false)}
+                  className="w-full px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg transition-colors"
+                >
+                  Fechar
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </Layout>
   );

@@ -2,6 +2,22 @@
 
 Sistema PDV (Point of Sale) completo para empresas, com arquitetura multi-tenant e painel administrativo.
 
+## 🚀 **INÍCIO RÁPIDO**
+
+**📚 [ÍNDICE COMPLETO DA DOCUMENTAÇÃO](INDICE_DOCUMENTACAO.md)** - Navegue por todos os guias
+
+**Novo aqui? Comece por aqui:**
+- 📖 **[Guia Visual Interativo](GUIA_VISUAL.html)** ⭐ **RECOMENDADO** - Abra no navegador
+- 📋 **[Próximos Passos](PROXIMOS_PASSOS.md)** - O que fazer agora para usar o sistema
+- 🎯 **[Guia Completo Final](GUIA_COMPLETO_FINAL.md)** - Documentação completa do projeto
+
+**Links Importantes:**
+- 🌐 **Landing Page:** https://flowny-2026.github.io/venda_facil/
+- 💻 **Sistema Cliente:** http://localhost:5173 (após iniciar)
+- 🏢 **Sistema Admin:** http://localhost:5180 (após iniciar)
+
+---
+
 ## 🎯 **Visão Geral**
 
 O **Venda Fácil** é uma solução SaaS B2B completa que permite:

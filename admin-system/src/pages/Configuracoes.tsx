@@ -12,7 +12,8 @@ import {
   Save,
   RefreshCw,
   CheckCircle,
-  AlertTriangle
+  AlertTriangle,
+  LogOut
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 
@@ -29,7 +30,7 @@ interface AdminUser {
 }
 
 export default function Configuracoes() {
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const [adminUsers, setAdminUsers] = useState<AdminUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -82,6 +83,30 @@ export default function Configuracoes() {
       setMessage({ type: 'error', text: 'Erro ao salvar configurações.' });
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    if (confirm('Tem certeza que deseja sair? Você precisará fazer login novamente.')) {
+      try {
+        // PASSO 1: Marcar logout intencional PRIMEIRO
+        console.log('🚪 Logout intencional - desabilitando auto-login...');
+        sessionStorage.setItem('intentional_logout', 'true');
+        
+        // PASSO 2: Limpar credenciais
+        localStorage.removeItem('admin_email');
+        localStorage.removeItem('admin_password');
+        
+        // PASSO 3: Fazer logout
+        await signOut();
+        
+        console.log('✅ Logout realizado com sucesso!');
+        
+        // PASSO 4: Recarregar a página para garantir que o estado foi limpo
+        window.location.href = '/';
+      } catch (error) {
+        console.error('Erro ao fazer logout:', error);
+      }
     }
   };
 
@@ -151,6 +176,14 @@ export default function Configuracoes() {
             <h1 className="text-3xl font-bold text-slate-100">Configurações do Sistema</h1>
             <p className="text-slate-400">Gerencie as configurações gerais e administradores</p>
           </div>
+          
+          <button
+            onClick={handleLogout}
+            className="flex items-center gap-2 px-4 py-2 bg-red-600/10 hover:bg-red-600/20 border border-red-500/30 text-red-400 rounded-lg font-medium transition-colors"
+          >
+            <LogOut className="w-4 h-4" />
+            Sair do Sistema
+          </button>
         </div>
 
         {/* Mensagem de feedback */}

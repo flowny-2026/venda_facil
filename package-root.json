@@ -1,0 +1,8 @@
+{
+  "name": "venda-facil",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "cd admin-system && npm install && npm run build"
+  }
+}

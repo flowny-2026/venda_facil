@@ -252,7 +252,7 @@ export default function Admin() {
                 : 'text-slate-400 hover:text-slate-200'
             }`}
           >
-            Dashboard
+            Painel
           </button>
           <button
             onClick={() => setActiveTab('users')}

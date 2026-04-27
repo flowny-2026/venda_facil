@@ -195,7 +195,7 @@ export default function Dashboard() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-slate-100">Dashboard Administrativo</h1>
+            <h1 className="text-3xl font-bold text-slate-100">Painel Administrativo</h1>
             <p className="mt-2 text-slate-400">Visão geral do seu negócio</p>
           </div>
           <button

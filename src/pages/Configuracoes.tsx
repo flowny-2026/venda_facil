@@ -1,8 +1,6 @@
 import { useState } from "react";
 import { Save, User, Bell, Palette, Database, Shield, LogIn, UserPlus, Key, LogOut } from "lucide-react";
 import DataManagement from "../components/DataManagement";
-import SupabaseSetup from "../components/SupabaseSetup";
-import SupabaseStatus from "../components/SupabaseStatus";
 import AuthModal from "../components/AuthModal";
 import { useAuth } from "../hooks/useAuth";
 
@@ -51,9 +49,6 @@ export default function Configuracoes() {
         <h1 className="text-3xl font-bold text-slate-100">Configurações</h1>
         <p className="mt-2 text-slate-400">Gerencie suas preferências e configurações do sistema</p>
       </div>
-
-      {/* Status da Conexão Supabase */}
-      <SupabaseStatus />
 
       {/* Seção de Autenticação */}
       <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-6 shadow-soft">
@@ -302,9 +297,6 @@ export default function Configuracoes() {
 
       {/* Gerenciamento de Dados */}
       <DataManagement onDataChange={handleDataChange} />
-
-      {/* Configuração do Supabase */}
-      <SupabaseSetup />
 
       {/* Seção de Segurança */}
       <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-6 shadow-soft">

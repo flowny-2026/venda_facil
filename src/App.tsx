@@ -1,6 +1,7 @@
 import { Routes, Route } from "react-router-dom";
 import { useAuth } from "./hooks/useAuth";
-import { RefreshCw, User } from "lucide-react";
+import { useUserRole } from "./hooks/useUserRole";
+import { RefreshCw, User, AlertTriangle } from "lucide-react";
 import Layout from "./components/Layout";
 import Dashboard from "./pages/Dashboard";
 import PDV from "./pages/PDV";
@@ -12,11 +13,15 @@ import Configuracoes from "./pages/Configuracoes";
 import ResetPassword from "./pages/ResetPassword";
 import AuthModal from "./components/AuthModal";
 import { useState, useEffect } from "react";
+import { supabase } from "./lib/supabase";
 
 function App() {
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, signOut } = useAuth();
+  const { permissions, loading: permissionsLoading, isSeller, isManager } = useUserRole();
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [useSupabase, setUseSupabase] = useState(false);
+  const [hasActiveCompany, setHasActiveCompany] = useState<boolean | null>(null);
+  const [checkingCompany, setCheckingCompany] = useState(true);
 
   // Verificar se deve usar Supabase
   useEffect(() => {
@@ -28,13 +33,100 @@ function App() {
     setUseSupabase(isValidConfig);
   }, []);
 
+  // Verificar se o usuário tem empresa ativa
+  useEffect(() => {
+    const checkUserCompany = async () => {
+      if (!user || !useSupabase) {
+        setCheckingCompany(false);
+        return;
+      }
+
+      try {
+        // Buscar empresa do usuário
+        const { data: companyUser, error } = await supabase
+          .from('company_users')
+          .select(`
+            company_id,
+            active,
+            companies:company_id (
+              id,
+              name,
+              status
+            )
+          `)
+          .eq('user_id', user.id)
+          .eq('active', true)
+          .maybeSingle(); // Mudado de .single() para .maybeSingle()
+
+        if (error) {
+          console.error('Erro ao buscar empresa:', error);
+          setHasActiveCompany(false);
+          await signOut();
+          return;
+        }
+
+        if (!companyUser || !companyUser.companies) {
+          console.error('Usuário sem empresa ativa');
+          setHasActiveCompany(false);
+          await signOut();
+          return;
+        }
+
+        if (companyUser.companies.status !== 'active') {
+          console.error('Empresa não está ativa');
+          setHasActiveCompany(false);
+          await signOut();
+          return;
+        }
+
+        setHasActiveCompany(true);
+      } catch (err) {
+        console.error('Erro ao verificar empresa:', err);
+        setHasActiveCompany(false);
+        await signOut();
+      } finally {
+        setCheckingCompany(false);
+      }
+    };
+
+    checkUserCompany();
+  }, [user, useSupabase]);
+
   // Tela de carregamento
-  if (authLoading) {
+  if (authLoading || checkingCompany || (user && permissionsLoading)) {
     return (
       <div className="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center">
         <div className="flex items-center gap-2 text-slate-400">
           <RefreshCw className="w-5 h-5 animate-spin" />
-          Carregando...
+          {checkingCompany ? 'Verificando acesso...' : permissionsLoading ? 'Carregando permissões...' : 'Carregando...'}
+        </div>
+      </div>
+    );
+  }
+
+  // Tela de erro se usuário não tem empresa ativa
+  if (useSupabase && user && hasActiveCompany === false) {
+    return (
+      <div className="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center">
+        <div className="w-full max-w-md px-4">
+          <div className="text-center">
+            <div className="p-3 bg-red-500/15 rounded-full mx-auto mb-4 w-fit">
+              <AlertTriangle className="w-8 h-8 text-red-400" />
+            </div>
+            <h1 className="text-2xl font-bold text-red-400 mb-2">Acesso Negado</h1>
+            <p className="text-slate-400 mb-4">
+              Sua empresa foi desativada ou removida do sistema.
+            </p>
+            <p className="text-sm text-slate-500 mb-6">
+              Entre em contato com o administrador para mais informações.
+            </p>
+            <button
+              onClick={() => window.location.reload()}
+              className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+            >
+              Tentar Novamente
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -62,14 +154,6 @@ function App() {
               
               <button
                 onClick={() => setIsAuthModalOpen(true)}
-                className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-green-600 hover:bg-green-700 text-white rounded-lg text-lg font-medium transition-colors"
-              >
-                <User className="w-5 h-5" />
-                Criar Nova Conta
-              </button>
-              
-              <button
-                onClick={() => setIsAuthModalOpen(true)}
                 className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-lg text-lg font-medium transition-colors"
               >
                 <RefreshCw className="w-5 h-5" />
@@ -79,7 +163,10 @@ function App() {
             
             <div className="mt-6 pt-6 border-t border-slate-700">
               <p className="text-center text-sm text-slate-400">
-                🔗 Conectado ao Supabase
+                🔒 Acesso restrito para clientes cadastrados
+              </p>
+              <p className="text-center text-xs text-slate-500 mt-2">
+                Entre em contato com o administrador para obter suas credenciais
               </p>
             </div>
           </div>
@@ -105,9 +192,11 @@ function App() {
               <Route path="/" element={<Dashboard />} />
               <Route path="/pdv" element={<PDV />} />
               <Route path="/produtos" element={<Produtos />} />
-              <Route path="/vendedores" element={<Vendedores />} />
+              {/* Vendedores: sempre mostrar se não for vendedor */}
+              {!isSeller && <Route path="/vendedores" element={<Vendedores />} />}
               <Route path="/pagamentos" element={<FormasPagamento />} />
-              <Route path="/relatorios" element={<Relatorios />} />
+              {/* Relatórios: apenas se tiver permissão ou for gerente */}
+              {(isManager || permissions?.canViewReports) && <Route path="/relatorios" element={<Relatorios />} />}
               <Route path="/configuracoes" element={<Configuracoes />} />
             </Routes>
           </Layout>

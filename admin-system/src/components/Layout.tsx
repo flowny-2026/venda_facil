@@ -1,12 +1,13 @@
 import { ReactNode } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { BarChart3, Building, TrendingUp, Settings, LogOut, User } from "lucide-react";
+import { BarChart3, Building, TrendingUp, Settings, LogOut, User, Mail } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
 
 const navigation = [
-  { name: "Dashboard", href: "/", icon: BarChart3 },
+  { name: "Painel", href: "/", icon: BarChart3 },
   { name: "Clientes", href: "/clientes", icon: Building },
   { name: "Vendas", href: "/vendas", icon: TrendingUp },
+  { name: "Leads", href: "/leads", icon: Mail },
   { name: "Configurações", href: "/configuracoes", icon: Settings },
 ];
 
@@ -16,7 +17,25 @@ export default function Layout({ children }: { children: ReactNode }) {
 
   const handleLogout = async () => {
     if (window.confirm('Tem certeza que deseja sair?')) {
-      await signOut();
+      try {
+        // PASSO 1: Marcar logout intencional PRIMEIRO
+        console.log('🚪 Logout intencional do cabeçalho - desabilitando auto-login...');
+        sessionStorage.setItem('intentional_logout', 'true');
+        
+        // PASSO 2: Limpar credenciais
+        localStorage.removeItem('admin_email');
+        localStorage.removeItem('admin_password');
+        
+        // PASSO 3: Fazer logout
+        await signOut();
+        
+        console.log('✅ Logout realizado com sucesso!');
+        
+        // PASSO 4: Recarregar a página para garantir que o estado foi limpo
+        window.location.href = '/';
+      } catch (error) {
+        console.error('Erro ao fazer logout:', error);
+      }
     }
   };
 
@@ -24,15 +43,18 @@ export default function Layout({ children }: { children: ReactNode }) {
     <>
       <nav className="bg-slate-900/50 border-b border-slate-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
-            <div className="flex">
-              <div className="flex-shrink-0 flex items-center">
-                <div className="p-2 bg-red-500/15 rounded-lg">
-                  <BarChart3 className="h-6 w-6 text-red-400" />
-                </div>
-                <span className="ml-3 text-xl font-bold text-slate-100">Admin - Sistema de Vendas</span>
+          <div className="flex justify-between items-center h-24">
+            <div className="flex items-center gap-6">
+              <div className="flex-shrink-0 flex items-center gap-3">
+                <img 
+                  src="/assets/images/logo-final.png" 
+                  alt="VendaFácil Admin" 
+                  className="h-[70px] w-auto object-contain"
+                  style={{ filter: 'drop-shadow(0 2px 8px rgba(239, 68, 68, 0.3))' }}
+                />
+                <span className="text-lg font-bold text-slate-100 whitespace-nowrap">Admin</span>
               </div>
-              <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
+              <div className="hidden lg:flex lg:space-x-4">
                 {navigation.map((item) => {
                   const Icon = item.icon;
                   const isActive = location.pathname === item.href;
@@ -40,13 +62,13 @@ export default function Layout({ children }: { children: ReactNode }) {
                     <Link
                       key={item.name}
                       to={item.href}
-                      className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
+                      className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
                         isActive
-                          ? "border-red-500 text-slate-100"
-                          : "border-transparent text-slate-400 hover:text-slate-200 hover:border-slate-300"
+                          ? "bg-red-500/15 text-red-400 border border-red-500/30"
+                          : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/50"
                       }`}
                     >
-                      <Icon className="w-4 h-4 mr-2" />
+                      <Icon className="w-4 h-4" />
                       {item.name}
                     </Link>
                   );
@@ -54,17 +76,17 @@ export default function Layout({ children }: { children: ReactNode }) {
               </div>
             </div>
             
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2 px-3 py-2 bg-slate-800/50 border border-slate-700 rounded-lg">
-                <User className="w-4 h-4 text-slate-400" />
-                <span className="text-sm text-slate-300">{user?.email}</span>
+            <div className="flex items-center gap-3 flex-shrink-0">
+              <div className="hidden md:flex items-center gap-2 px-3 py-2 bg-slate-800/50 border border-slate-700 rounded-lg">
+                <User className="w-4 h-4 text-slate-400 flex-shrink-0" />
+                <span className="text-sm text-slate-300 truncate max-w-[200px]">{user?.email}</span>
               </div>
               <button
                 onClick={handleLogout}
-                className="flex items-center gap-2 px-3 py-2 text-slate-400 hover:text-slate-200 border border-slate-700 rounded-lg hover:border-slate-600 transition-colors"
+                className="flex items-center gap-2 px-3 py-2 text-slate-400 hover:text-slate-200 border border-slate-700 rounded-lg hover:border-slate-600 transition-colors whitespace-nowrap"
               >
                 <LogOut className="w-4 h-4" />
-                <span className="text-sm">Sair</span>
+                <span className="text-sm hidden sm:inline">Sair</span>
               </button>
             </div>
           </div>

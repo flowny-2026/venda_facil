@@ -57,13 +57,19 @@ export default function CompanyModal({ isOpen, onClose, onSuccess }: CompanyModa
 
     try {
       // 1. Criar usuário no Supabase Auth
-      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+      const { data: authData, error: authError } = await supabase.auth.signUp({
         email: formData.user_email,
         password: formData.user_password,
-        email_confirm: true
+        options: {
+          emailRedirectTo: window.location.origin,
+          data: {
+            name: formData.user_name
+          }
+        }
       });
 
       if (authError) throw authError;
+      if (!authData.user) throw new Error('Erro ao criar usuário');
 
       // 2. Criar empresa
       const { data: company, error: companyError } = await supabase
@@ -100,7 +106,7 @@ export default function CompanyModal({ isOpen, onClose, onSuccess }: CompanyModa
 
       if (userCompanyError) throw userCompanyError;
 
-      alert(`Empresa criada com sucesso!\n\nCredenciais de acesso:\nEmail: ${formData.user_email}\nSenha: ${formData.user_password}\n\nTipo: ${formData.access_type === 'shared' ? 'Acesso Compartilhado' : 'Acesso Individual'}`);
+      alert(`Empresa criada com sucesso!\n\nCredenciais de acesso:\nEmail: ${formData.user_email}\nSenha: ${formData.user_password}\n\nTipo: ${formData.access_type === 'shared' ? 'Acesso Compartilhado' : 'Acesso Individual'}\n\n⚠️ Você será deslogado momentaneamente, mas o sistema fará login automático novamente.`);
       
       onSuccess();
       onClose();
