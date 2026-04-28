@@ -1,6 +1,14 @@
 {
-  "buildCommand": "cd admin-system && npm install && npm run build",
-  "outputDirectory": "admin-system/dist",
+  "version": 2,
+  "builds": [
+    {
+      "src": "admin-system/package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "dist"
+      }
+    }
+  ],
   "routes": [
     {
       "src": "^/$",
@@ -11,11 +19,15 @@
       "dest": "/public/assets/$1"
     },
     {
-      "src": "^/admin(/.*)?",
+      "src": "^/admin$",
       "dest": "/admin-system/dist/index.html"
     },
     {
-      "src": "/(.*)",
+      "src": "^/admin/(.*)",
+      "dest": "/admin-system/dist/index.html"
+    },
+    {
+      "src": "^/(.*\\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot))$",
       "dest": "/admin-system/dist/$1"
     }
   ]
