@@ -51,6 +51,7 @@ interface CartItem {
 
 export default function PDV() {
   const { permissions, isSeller } = useUserRole();
+  const [companyId, setCompanyId] = useState<string | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [sellers, setSellers] = useState<Seller[]>([]);
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
@@ -64,6 +65,13 @@ export default function PDV() {
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
 
+  // Buscar company_id
+  useEffect(() => {
+    if (permissions?.companyId) {
+      setCompanyId(permissions.companyId);
+    }
+  }, [permissions]);
+
   // Se for vendedor, selecionar automaticamente
   useEffect(() => {
     if (isSeller && permissions?.sellerId) {
@@ -72,10 +80,14 @@ export default function PDV() {
   }, [isSeller, permissions]);
 
   useEffect(() => {
-    loadData();
-  }, []);
+    if (companyId) {
+      loadData();
+    }
+  }, [companyId]);
 
   const loadData = async () => {
+    if (!companyId) return;
+    
     try {
       const [productsRes, sellersRes, paymentMethodsRes] = await Promise.all([
         supabase
@@ -84,18 +96,21 @@ export default function PDV() {
             *,
             product_categories (name, color)
           `)
+          .eq('company_id', companyId)
           .eq('active', true)
           .order('name'),
         
         supabase
           .from('sellers')
           .select('*')
+          .eq('company_id', companyId)
           .eq('active', true)
           .order('name'),
         
         supabase
           .from('payment_methods')
           .select('*')
+          .eq('company_id', companyId)
           .eq('active', true)
           .order('name')
       ]);

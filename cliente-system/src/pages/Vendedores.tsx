@@ -159,10 +159,28 @@ export default function Vendedores() {
 
   const loadSellers = async () => {
     try {
-      // Carregar vendedores
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Buscar company_id do usuário
+      const { data: companyData, error: companyError } = await supabase
+        .from('company_users')
+        .select('company_id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (companyError || !companyData) {
+        console.error('Erro ao buscar empresa:', companyError);
+        return;
+      }
+
+      const companyId = companyData.company_id;
+
+      // Carregar vendedores DA EMPRESA
       const { data: sellersData, error: sellersError } = await supabase
         .from('sellers')
         .select('*')
+        .eq('company_id', companyId)
         .order('created_at', { ascending: false });
 
       if (sellersError) throw sellersError;
@@ -171,6 +189,7 @@ export default function Vendedores() {
       const { data: companyUsersData } = await supabase
         .from('company_users')
         .select('seller_id')
+        .eq('company_id', companyId)
         .not('seller_id', 'is', null);
 
       const sellersWithLogin = new Set(companyUsersData?.map(cu => cu.seller_id) || []);
