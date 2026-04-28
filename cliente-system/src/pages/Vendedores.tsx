@@ -12,9 +12,11 @@ import {
   RefreshCw,
   CheckCircle,
   XCircle,
-  Key
+  Key,
+  BarChart3
 } from 'lucide-react';
 import CreateSellerLoginModal from '../components/CreateSellerLoginModal';
+import SellerPerformanceCard from '../components/SellerPerformanceCard';
 
 interface Seller {
   id: string;
@@ -29,6 +31,18 @@ interface Seller {
   has_login?: boolean;
 }
 
+interface SellerStats {
+  sellerId: string;
+  sellerName: string;
+  todaySales: number;
+  todayItemsCount: number;
+  todayTicketAvg: number;
+  monthSales: number;
+  monthItemsCount: number;
+  monthTicketAvg: number;
+  commission: number;
+}
+
 export default function Vendedores() {
   const [sellers, setSellers] = useState<Seller[]>([]);
   const [loading, setLoading] = useState(true);
@@ -38,6 +52,8 @@ export default function Vendedores() {
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [selectedSellerForLogin, setSelectedSellerForLogin] = useState<Seller | null>(null);
   const [companyAccessType, setCompanyAccessType] = useState<string>('shared'); // 'shared' ou 'individual'
+  const [sellersStats, setSellersStats] = useState<SellerStats[]>([]);
+  const [loadingStats, setLoadingStats] = useState(false);
   const [newSeller, setNewSeller] = useState({
     name: '',
     email: '',
@@ -51,6 +67,70 @@ export default function Vendedores() {
     loadCompanyAccessType();
     loadSellers();
   }, []);
+
+  useEffect(() => {
+    // Carregar estatísticas apenas para empresas com acesso compartilhado
+    if (companyAccessType === 'shared' && sellers.length > 0) {
+      loadSellersStats();
+    }
+  }, [companyAccessType, sellers]);
+
+  const loadSellersStats = async () => {
+    try {
+      setLoadingStats(true);
+      
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+      
+      // Buscar vendas do dia e do mês para cada vendedor
+      const statsPromises = sellers.map(async (seller) => {
+        // Vendas do dia
+        const { data: todaySales, error: todayError } = await supabase
+          .from('sales')
+          .select('total_amount, items_count')
+          .eq('seller_id', seller.id)
+          .gte('created_at', today.toISOString());
+
+        // Vendas do mês
+        const { data: monthSales, error: monthError } = await supabase
+          .from('sales')
+          .select('total_amount, items_count')
+          .eq('seller_id', seller.id)
+          .gte('created_at', firstDayOfMonth.toISOString());
+
+        const todayCount = todaySales?.length || 0;
+        const todayItems = todaySales?.reduce((sum, sale) => sum + (sale.items_count || 1), 0) || 0;
+        const todayTotal = todaySales?.reduce((sum, sale) => sum + (sale.total_amount || 0), 0) || 0;
+        const todayAvg = todayCount > 0 ? todayTotal / todayCount : 0;
+
+        const monthCount = monthSales?.length || 0;
+        const monthItems = monthSales?.reduce((sum, sale) => sum + (sale.items_count || 1), 0) || 0;
+        const monthTotal = monthSales?.reduce((sum, sale) => sum + (sale.total_amount || 0), 0) || 0;
+        const monthAvg = monthCount > 0 ? monthTotal / monthCount : 0;
+
+        return {
+          sellerId: seller.id,
+          sellerName: seller.name,
+          todaySales: todayCount,
+          todayItemsCount: todayItems,
+          todayTicketAvg: todayAvg,
+          monthSales: monthCount,
+          monthItemsCount: monthItems,
+          monthTicketAvg: monthAvg,
+          commission: seller.commission_percentage
+        };
+      });
+
+      const stats = await Promise.all(statsPromises);
+      setSellersStats(stats);
+    } catch (error) {
+      console.error('Erro ao carregar estatísticas:', error);
+    } finally {
+      setLoadingStats(false);
+    }
+  };
 
   const loadCompanyAccessType = async () => {
     try {
@@ -367,6 +447,52 @@ export default function Vendedores() {
           </div>
         </div>
       </div>
+
+      {/* Dashboard de Performance - Apenas para Acesso Compartilhado */}
+      {companyAccessType === 'shared' && sellers.length > 0 && (
+        <div className="bg-slate-900/50 border border-slate-800 rounded-2xl overflow-hidden">
+          <div className="p-6 border-b border-slate-800 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <BarChart3 className="w-6 h-6 text-blue-400" />
+              <div>
+                <h3 className="text-lg font-semibold text-slate-100">Performance dos Vendedores</h3>
+                <p className="text-sm text-slate-400">Métricas em tempo real de cada vendedor</p>
+              </div>
+            </div>
+            <button
+              onClick={loadSellersStats}
+              disabled={loadingStats}
+              className="flex items-center gap-2 px-4 py-2 text-sm border border-slate-700 rounded-lg hover:border-slate-600 transition-colors disabled:opacity-50"
+            >
+              <RefreshCw className={`w-4 h-4 ${loadingStats ? 'animate-spin' : ''}`} />
+              {loadingStats ? 'Atualizando...' : 'Atualizar'}
+            </button>
+          </div>
+
+          <div className="p-6">
+            {loadingStats ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="flex items-center gap-2 text-slate-400">
+                  <RefreshCw className="w-5 h-5 animate-spin" />
+                  Carregando estatísticas...
+                </div>
+              </div>
+            ) : sellersStats.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {sellersStats.map((stats) => (
+                  <SellerPerformanceCard key={stats.sellerId} stats={stats} />
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-12">
+                <BarChart3 className="w-12 h-12 text-slate-600 mx-auto mb-4" />
+                <h3 className="text-lg font-semibold text-slate-300 mb-2">Nenhuma venda registrada</h3>
+                <p className="text-slate-400">As estatísticas aparecerão quando houver vendas.</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Lista de Vendedores */}
       <div className="bg-slate-900/50 border border-slate-800 rounded-2xl overflow-hidden">
