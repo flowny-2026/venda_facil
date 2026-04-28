@@ -1,14 +1,9 @@
 {
   "version": 2,
-  "builds": [
-    {
-      "src": "admin-system/package.json",
-      "use": "@vercel/static-build",
-      "config": {
-        "distDir": "dist"
-      }
-    }
-  ],
+  "buildCommand": "cd admin-system && npm install && npm run build",
+  "outputDirectory": "admin-system/dist",
+  "installCommand": "echo 'Skipping root install'",
+  "framework": null,
   "routes": [
     {
       "src": "^/$",
