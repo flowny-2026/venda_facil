@@ -104,6 +104,12 @@ export default function Dashboard() {
           .from('sales')
           .select('*');
         
+        // Filtrar por empresa
+        if (permissions?.companyId) {
+          console.log('🏢 Filtrando vendas da empresa:', permissions.companyId);
+          query = query.eq('company_id', permissions.companyId);
+        }
+        
         // Se for vendedor, filtrar apenas suas vendas
         if (isSeller && permissions?.sellerId) {
           console.log('👤 Vendedor detectado! Filtrando vendas do seller_id:', permissions.sellerId);
@@ -111,7 +117,7 @@ export default function Dashboard() {
         }
         
         // Ordenar por data
-        query = query.order('created_at', { ascending: false });
+        query = query.order('created_at', { ascending: false});
         
         const { data: salesData, error } = await query;
         
