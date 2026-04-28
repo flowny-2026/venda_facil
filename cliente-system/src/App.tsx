@@ -142,7 +142,7 @@ function App() {
             <img 
               src="/assets/images/logo-vendafacil.png" 
               alt="VendaFácil" 
-              className="h-24 w-auto object-contain"
+              className="h-36 w-auto object-contain"
               style={{ filter: 'drop-shadow(0 4px 12px rgba(59, 130, 246, 0.4))' }}
             />
           </div>
