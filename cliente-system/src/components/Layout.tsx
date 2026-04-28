@@ -42,7 +42,7 @@ export default function Layout({ children }: { children: ReactNode }) {
                 <img 
                   src="/assets/images/logo-vendafacil.png" 
                   alt="VendaFácil" 
-                  className="h-[70px] w-auto object-contain"
+                  className="h-[50px] w-auto object-contain"
                   style={{ filter: 'drop-shadow(0 2px 8px rgba(59, 130, 246, 0.3))' }}
                 />
                 <div>
