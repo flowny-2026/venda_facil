@@ -49,7 +49,7 @@ export default function Layout({ children }: { children: ReactNode }) {
                 <img 
                   src="/assets/images/logo-vendafacil.png" 
                   alt="VendaFácil Admin" 
-                  className="h-[105px] w-auto object-contain"
+                  className="h-[60px] w-auto object-contain"
                   style={{ filter: 'drop-shadow(0 2px 8px rgba(239, 68, 68, 0.3))' }}
                 />
                 <span className="text-lg font-bold text-slate-100 whitespace-nowrap">Admin</span>
