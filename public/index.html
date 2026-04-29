@@ -1148,31 +1148,31 @@
                 </div>
                 <div class="showcase-features">
                     <div class="feature-item">
-                        <div class="feature-icon">?</div>
+                        <div class="feature-icon">🛒</div>
                         <div>
                             <h4>PDV Completo</h4>
-                            <p>Carrinho intuitivo, descontos, m�ltiplas formas de pagamento e c�lculo autom�tico de troco.</p>
+                            <p>Carrinho intuitivo, descontos, múltiplas formas de pagamento e cálculo automático de troco.</p>
                         </div>
                     </div>
                     <div class="feature-item">
-                        <div class="feature-icon">?</div>
+                        <div class="feature-icon">📦</div>
                         <div>
-                            <h4>Gest�o de Estoque</h4>
-                            <p>Controle autom�tico de estoque, alertas de produtos em falta e categoriza��o inteligente.</p>
+                            <h4>Gestão de Estoque</h4>
+                            <p>Controle automático de estoque, alertas de produtos em falta e categorização inteligente.</p>
                         </div>
                     </div>
                     <div class="feature-item">
-                        <div class="feature-icon">?</div>
+                        <div class="feature-icon">👥</div>
                         <div>
                             <h4>Controle de Vendedores</h4>
-                            <p>Acompanhe o desempenho de cada vendedor com relat�rios detalhados e comiss�es autom�ticas.</p>
+                            <p>Acompanhe o desempenho de cada vendedor com relatórios detalhados e comissões automáticas.</p>
                         </div>
                     </div>
                     <div class="feature-item">
-                        <div class="feature-icon">?</div>
+                        <div class="feature-icon">📊</div>
                         <div>
-                            <h4>Relat�rios Avan�ados</h4>
-                            <p>Dashboard completo com KPIs, gr�ficos e an�lises para tomar decis�es inteligentes.</p>
+                            <h4>Relatórios Avançados</h4>
+                            <p>Dashboard completo com KPIs, gráficos e análises para tomar decisões inteligentes.</p>
                         </div>
                     </div>
                 </div>
@@ -1253,7 +1253,7 @@
             <div class="footer-section">
                 <h3>Empresa</h3>
                 <ul>
-                    <li><a href="#">Sobre N�s</a></li>
+                    <li><a href="#">Sobre Nós</a></li>
                     <li><a href="#">Blog</a></li>
                     <li><a href="#">Carreiras</a></li>
                     <li><a href="#">Contato</a></li>
@@ -1263,7 +1263,7 @@
                 <h3>Suporte</h3>
                 <ul>
                     <li><a href="#">Central de Ajuda</a></li>
-                    <li><a href="#">Documenta��o</a></li>
+                    <li><a href="#">Documentação</a></li>
                     <li><a href="#">Status do Sistema</a></li>
                     <li><a href="https://github.com/flowny-2026/venda_facil">GitHub</a></li>
                 </ul>
@@ -1421,7 +1421,7 @@
             try {
                 // Verificar se o Supabase est� configurado
                 if (typeof window.supabaseClient === 'undefined') {
-                    console.warn('?? Supabase n�o configurado. Dados salvos apenas no console.');
+                    console.warn('?? Supabase não configurado. Dados salvos apenas no console.');
                     throw new Error('SUPABASE_NOT_CONFIGURED');
                 }
                 
@@ -1445,15 +1445,15 @@
             } catch (error) {
                 if (error.message === 'SUPABASE_NOT_CONFIGURED') {
                     // Modo demonstra��o - apenas mostra no console
-                    console.log('?? MODO DEMONSTRA��O - Dados do lead:', formData);
-                    alert('? Formul�rio enviado!\n\n?? Sistema em modo demonstra��o.\n\nPara receber os leads:\n1. Execute o script CRIAR_TABELA_LEADS.sql no Supabase\n2. Adicione o Supabase Client na landing page\n3. Os leads ser�o salvos automaticamente no banco');
+                    console.log('?? MODO DEMONSTRAÇÃO - Dados do lead:', formData);
+                    alert('? Formul�rio enviado!\n\n?? Sistema em modo demonstração.\n\nPara receber os leads:\n1. Execute o script CRIAR_TABELA_LEADS.sql no Supabase\n2. Adicione o Supabase Client na landing page\n3. Os leads serão salvos automaticamente no banco');
                     
                     document.getElementById('contactForm').style.display = 'none';
                     document.getElementById('successMessage').style.display = 'block';
                 } else {
                     // Erro real do Supabase
                     console.error('? Erro ao enviar:', error);
-                    alert('? Erro ao enviar formul�rio: ' + (error.message || 'Tente novamente.'));
+                    alert('? Erro ao enviar formulario: ' + (error.message || 'Tente novamente.'));
                 }
             } finally {
                 submitBtn.textContent = originalText;
@@ -1478,12 +1478,12 @@
             if (btnComecarAgora) {
                 btnComecarAgora.addEventListener('click', function(e) {
                     e.preventDefault();
-                    console.log('?? Bot�o clicado via addEventListener!');
+                    console.log('?? Botão clicado via addEventListener!');
                     openContactModal();
                 });
-                console.log('? Listener adicionado ao bot�o "Come�ar Agora"');
+                console.log('? Listener adicionado ao botão "Começar Agora"');
             } else {
-                console.error('? Bot�o "Come�ar Agora" n�o encontrado!');
+                console.error('? Botão "Começar Agora" não encontrado!');
             }
             
             // Smooth scroll para links �ncora
@@ -1542,7 +1542,7 @@
 
 </body>
 </html>
-                console.error('? Supabase n�o carregou corretamente');
+                console.error('O Supabase não carregou corretamente');
             }
         });
     </script>
