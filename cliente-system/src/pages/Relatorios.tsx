@@ -65,23 +65,18 @@ export default function Relatorios() {
       }
 
       // Buscar vendas do período
-      let query = supabase
+      let salesQuery = supabase
         .from('sales')
-        .select(`
-          *,
-          products (name, category),
-          sellers (name),
-          payment_methods (name)
-        `)
+        .select('*')
         .eq('company_id', companyId)
         .gte('created_at', startDate.toISOString());
 
       // Se for vendedor, filtrar apenas suas vendas
       if (isSeller && userSellerId) {
-        query = query.eq('seller_id', userSellerId);
+        salesQuery = salesQuery.eq('seller_id', userSellerId);
       }
 
-      const { data: sales, error: salesError } = await query;
+      const { data: sales, error: salesError } = await salesQuery;
 
       if (salesError) throw salesError;
 
@@ -97,15 +92,45 @@ export default function Relatorios() {
         return;
       }
 
+      // Buscar produtos, vendedores e formas de pagamento separadamente
+      const productIds = [...new Set(sales.map(s => s.product_id).filter(Boolean))];
+      const sellerIds = [...new Set(sales.map(s => s.seller_id).filter(Boolean))];
+      const paymentMethodIds = [...new Set(sales.map(s => s.payment_method_id).filter(Boolean))];
+
+      const [productsRes, sellersRes, paymentMethodsRes] = await Promise.all([
+        productIds.length > 0 
+          ? supabase.from('products').select('id, name, category').in('id', productIds)
+          : Promise.resolve({ data: [], error: null }),
+        sellerIds.length > 0
+          ? supabase.from('sellers').select('id, name').in('id', sellerIds)
+          : Promise.resolve({ data: [], error: null }),
+        paymentMethodIds.length > 0
+          ? supabase.from('payment_methods').select('id, name').in('id', paymentMethodIds)
+          : Promise.resolve({ data: [], error: null }),
+      ]);
+
+      // Criar maps para lookup rápido
+      const productsMap = new Map(productsRes.data?.map(p => [p.id, p]) || []);
+      const sellersMap = new Map(sellersRes.data?.map(s => [s.id, s]) || []);
+      const paymentMethodsMap = new Map(paymentMethodsRes.data?.map(pm => [pm.id, pm]) || []);
+
+      // Enriquecer vendas com dados relacionados
+      const enrichedSales = sales.map(sale => ({
+        ...sale,
+        product: productsMap.get(sale.product_id),
+        seller: sellersMap.get(sale.seller_id),
+        payment_method: paymentMethodsMap.get(sale.payment_method_id),
+      }));
+
       // Calcular métricas
-      const totalVendas = sales.reduce((sum, sale) => sum + sale.total_amount, 0);
-      const totalProdutos = sales.reduce((sum, sale) => sum + sale.quantity, 0);
-      const ticketMedio = totalVendas / sales.length;
+      const totalVendas = enrichedSales.reduce((sum, sale) => sum + sale.total_amount, 0);
+      const totalProdutos = enrichedSales.reduce((sum, sale) => sum + sale.quantity, 0);
+      const ticketMedio = totalVendas / enrichedSales.length;
 
       // Vendas por categoria
       const categoriaMap = new Map<string, { total: number; quantidade: number }>();
-      sales.forEach(sale => {
-        const categoria = sale.products?.category || 'Sem Categoria';
+      enrichedSales.forEach(sale => {
+        const categoria = sale.product?.category || 'Sem Categoria';
         const current = categoriaMap.get(categoria) || { total: 0, quantidade: 0 };
         categoriaMap.set(categoria, {
           total: current.total + sale.total_amount,
@@ -119,8 +144,8 @@ export default function Relatorios() {
 
       // Vendas por vendedor
       const vendedorMap = new Map<string, { total: number; quantidade: number }>();
-      sales.forEach(sale => {
-        const vendedor = sale.sellers?.name || 'Sem Vendedor';
+      enrichedSales.forEach(sale => {
+        const vendedor = sale.seller?.name || 'Sem Vendedor';
         const current = vendedorMap.get(vendedor) || { total: 0, quantidade: 0 };
         vendedorMap.set(vendedor, {
           total: current.total + sale.total_amount,
@@ -134,8 +159,8 @@ export default function Relatorios() {
 
       // Vendas por forma de pagamento
       const pagamentoMap = new Map<string, { total: number; quantidade: number }>();
-      sales.forEach(sale => {
-        const forma = sale.payment_methods?.name || 'Não Informado';
+      enrichedSales.forEach(sale => {
+        const forma = sale.payment_method?.name || 'Não Informado';
         const current = pagamentoMap.get(forma) || { total: 0, quantidade: 0 };
         pagamentoMap.set(forma, {
           total: current.total + sale.total_amount,
