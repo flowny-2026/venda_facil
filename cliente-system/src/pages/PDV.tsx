@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { useUserRole } from '../hooks/useUserRole';
+import { printReceipt, downloadReceipt } from '../components/PrintReceipt';
 import { 
   ShoppingCart, 
   Plus, 
@@ -13,7 +14,10 @@ import {
   Calculator,
   Check,
   Search,
-  Package
+  Package,
+  Printer,
+  Download,
+  X
 } from 'lucide-react';
 
 interface Product {
@@ -64,13 +68,36 @@ export default function PDV() {
   const [paymentReceived, setPaymentReceived] = useState(0);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
+  
+  // Estados para impressão de cupom
+  const [lastSale, setLastSale] = useState<any>(null);
+  const [showPrintModal, setShowPrintModal] = useState(false);
+  const [companyData, setCompanyData] = useState<any>(null);
 
   // Buscar company_id
   useEffect(() => {
     if (permissions?.companyId) {
       setCompanyId(permissions.companyId);
+      loadCompanyData(permissions.companyId);
     }
   }, [permissions]);
+
+  // Função para buscar dados da empresa
+  const loadCompanyData = async (compId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('companies')
+        .select('*')
+        .eq('id', compId)
+        .single();
+
+      if (!error && data) {
+        setCompanyData(data);
+      }
+    } catch (err) {
+      console.error('Erro ao buscar dados da empresa:', err);
+    }
+  };
 
   // Se for vendedor, selecionar automaticamente
   useEffect(() => {
@@ -393,7 +420,29 @@ export default function PDV() {
         }
       }
 
-      alert(`Venda realizada com sucesso!\nTotal: ${formatCurrency(total)}\nTroco: ${formatCurrency(change)}`);
+      // Preparar dados da venda para impressão
+      const seller = sellers.find(s => s.id === selectedSeller);
+      const paymentMethod = paymentMethods.find(pm => pm.id === selectedPaymentMethod);
+      
+      // Pegar o primeiro produto do carrinho para o cupom
+      const firstItem = cart[0];
+      
+      const saleForPrint = {
+        id: saleData.id,
+        product_name: cart.length === 1 
+          ? firstItem.product.name 
+          : `${cart.length} produtos`,
+        quantity: cart.reduce((sum, item) => sum + item.quantity, 0),
+        unit_price: cart.length === 1 ? firstItem.unit_price : total / cart.reduce((sum, item) => sum + item.quantity, 0),
+        total_amount: total,
+        payment_method_name: paymentMethod?.name || 'Não informado',
+        seller_name: seller?.name || 'Não informado',
+        created_at: new Date().toISOString(),
+      };
+
+      setLastSale(saleForPrint);
+      setShowPrintModal(true);
+      
       clearCart();
       loadData(); // Recarregar produtos para atualizar estoque
     } catch (error: any) {
@@ -735,6 +784,84 @@ export default function PDV() {
           </button>
         )}
       </div>
+
+      {/* Modal de Impressão de Cupom */}
+      {showPrintModal && lastSale && companyData && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-md w-full shadow-2xl">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-bold text-slate-100 flex items-center gap-2">
+                <Check className="w-6 h-6 text-emerald-400" />
+                Venda Finalizada!
+              </h3>
+              <button
+                onClick={() => setShowPrintModal(false)}
+                className="text-slate-400 hover:text-slate-200 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-4 mb-6">
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-slate-400">Total:</span>
+                <span className="text-2xl font-bold text-emerald-400">
+                  {formatCurrency(lastSale.total_amount)}
+                </span>
+              </div>
+              <div className="flex justify-between items-center text-sm">
+                <span className="text-slate-400">Troco:</span>
+                <span className="text-slate-200">
+                  {formatCurrency(change)}
+                </span>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <button
+                onClick={() => {
+                  printReceipt(lastSale, {
+                    name: companyData.name,
+                    cnpj: companyData.cnpj,
+                    address: companyData.address,
+                    phone: companyData.phone,
+                  });
+                }}
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+              >
+                <Printer className="w-5 h-5" />
+                Imprimir Cupom
+              </button>
+
+              <button
+                onClick={() => {
+                  downloadReceipt(lastSale, {
+                    name: companyData.name,
+                    cnpj: companyData.cnpj,
+                    address: companyData.address,
+                    phone: companyData.phone,
+                  });
+                }}
+                className="w-full bg-slate-700 hover:bg-slate-600 text-white px-4 py-3 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+              >
+                <Download className="w-5 h-5" />
+                Baixar PDF
+              </button>
+
+              <button
+                onClick={() => setShowPrintModal(false)}
+                className="w-full bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-3 rounded-lg font-medium transition-colors"
+              >
+                Fechar
+              </button>
+            </div>
+
+            <p className="text-xs text-slate-500 text-center mt-4">
+              Cupom não fiscal - Não válido como documento fiscal
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
