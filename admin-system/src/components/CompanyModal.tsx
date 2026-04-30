@@ -15,6 +15,7 @@ export default function CompanyModal({ isOpen, onClose, onSuccess }: CompanyModa
     email: '',
     phone: '',
     document: '',
+    address: '',
     plan: 'starter' as 'starter' | 'professional' | 'enterprise',
     access_type: 'shared' as 'shared' | 'individual',
     max_users: 1,
@@ -79,6 +80,7 @@ export default function CompanyModal({ isOpen, onClose, onSuccess }: CompanyModa
           email: formData.email,
           phone: formData.phone,
           document: formData.document,
+          address: formData.address,
           plan: formData.plan,
           access_type: formData.access_type,
           max_users: formData.max_users,
@@ -117,6 +119,7 @@ export default function CompanyModal({ isOpen, onClose, onSuccess }: CompanyModa
         email: '',
         phone: '',
         document: '',
+        address: '',
         plan: 'starter',
         access_type: 'shared',
         max_users: 1,
@@ -209,6 +212,19 @@ export default function CompanyModal({ isOpen, onClose, onSuccess }: CompanyModa
                   onChange={(e) => setFormData(prev => ({ ...prev, document: e.target.value }))}
                   className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-2 text-slate-200 focus:outline-none focus:ring-2 focus:ring-red-500/50"
                   placeholder="00.000.000/0000-00"
+                />
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-slate-300 mb-2">
+                  Endereço Completo
+                </label>
+                <input
+                  type="text"
+                  value={formData.address}
+                  onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
+                  className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-2 text-slate-200 focus:outline-none focus:ring-2 focus:ring-red-500/50"
+                  placeholder="Rua Exemplo, 123 - Bairro - Cidade/UF - CEP 00000-000"
                 />
               </div>
             </div>
