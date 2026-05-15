@@ -104,7 +104,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4" autoComplete="off">
           <div>
             <label className="block text-sm font-medium text-slate-300 mb-2">
               Email
@@ -113,14 +113,17 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
               <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
               <input
                 type="email"
+                name="email-field"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="w-full bg-slate-800/50 border border-slate-700 rounded-lg pl-10 pr-4 py-2 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
                 placeholder="seu@email.com"
-                autoComplete="off"
+                autoComplete="new-email"
                 autoCorrect="off"
                 autoCapitalize="off"
                 spellCheck="false"
+                data-form-type="other"
+                data-lpignore="true"
                 required
               />
             </div>
@@ -135,11 +138,14 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
                 <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
                 <input
                   type="password"
+                  name="password-field"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="w-full bg-slate-800/50 border border-slate-700 rounded-lg pl-10 pr-4 py-2 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
                   placeholder="••••••••"
-                  autoComplete="off"
+                  autoComplete="new-password"
+                  data-form-type="other"
+                  data-lpignore="true"
                   required
                   minLength={6}
                 />

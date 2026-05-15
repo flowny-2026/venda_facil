@@ -15,7 +15,13 @@ Sistema completo de Ponto de Venda com Landing Page e Painel Administrativo.
 │   ├── public/
 │   └── package.json
 │
+├── 📁 cliente-system/            ← Sistema Cliente (PDV)
+│   ├── src/
+│   ├── public/
+│   └── package.json
+│
 ├── 📄 vercel.json                ← Configuração de deploy
+├── 📄 package.json               ← Scripts de build
 └── 📄 README.md
 ```
 
@@ -26,6 +32,7 @@ Após o deploy:
 ```
 https://seu-projeto.vercel.app/              → Landing Page
 https://seu-projeto.vercel.app/admin         → Sistema Admin
+https://seu-projeto.vercel.app/cliente       → Sistema Cliente (PDV)
 ```
 
 ## 🚀 Deploy no Vercel
@@ -45,8 +52,10 @@ O projeto está configurado para deploy automático no Vercel:
 
 O `vercel.json` já está configurado para:
 - Fazer build do admin-system
+- Fazer build do cliente-system
 - Servir a landing page em `/`
 - Servir o admin em `/admin`
+- Servir o cliente em `/cliente`
 
 ## 🔧 Desenvolvimento Local
 
@@ -61,6 +70,15 @@ npm run dev
 ```
 
 Acesse: http://localhost:5180
+
+### Sistema Cliente (PDV)
+```bash
+cd cliente-system
+npm install
+npm run dev
+```
+
+Acesse: http://localhost:5173
 
 ## 📊 Funcionalidades
 

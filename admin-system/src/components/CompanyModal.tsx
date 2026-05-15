@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X, Building, Mail, Phone, FileText, Users, Shield, DollarSign } from 'lucide-react';
+import { X, Building, Users, Shield, DollarSign } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 interface CompanyModalProps {
@@ -57,25 +57,32 @@ export default function CompanyModal({ isOpen, onClose, onSuccess }: CompanyModa
     setLoading(true);
 
     try {
-      // 1. Criar usuário no Supabase Auth
+      // Salva a sessão do admin antes de criar novo usuário
+      const { data: { session: adminSession } } = await supabase.auth.getSession();
+
+      // 1. Cria o usuário no Supabase Auth
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: formData.user_email,
         password: formData.user_password,
         options: {
-          emailRedirectTo: window.location.origin,
-          data: {
-            name: formData.user_name
-          }
+          data: { name: formData.user_name }
         }
       });
 
       if (authError) throw authError;
       if (!authData.user) throw new Error('Erro ao criar usuário');
 
-      // 2. Criar empresa
-      const { data: company, error: companyError } = await supabase
-        .from('companies')
-        .insert([{
+      // 2. Restaura a sessão do admin imediatamente
+      if (adminSession) {
+        await supabase.auth.setSession({
+          access_token: adminSession.access_token,
+          refresh_token: adminSession.refresh_token
+        });
+      }
+
+      // 3. Cria a empresa e vincula o usuário
+      const { error } = await supabase.rpc('create_company', {
+        company_data: {
           name: formData.name,
           email: formData.email,
           phone: formData.phone,
@@ -86,34 +93,19 @@ export default function CompanyModal({ isOpen, onClose, onSuccess }: CompanyModa
           max_users: formData.max_users,
           monthly_fee: formData.monthly_fee,
           status: 'active'
-        }])
-        .select()
-        .single();
+        },
+        user_email: formData.user_email,
+        user_name: formData.user_name,
+        user_password: formData.user_password
+      });
 
-      if (companyError) throw companyError;
+      if (error) throw error;
 
-      // 3. Criar relacionamento usuário-empresa
-      const { error: userCompanyError } = await supabase
-        .from('company_users')
-        .insert([{
-          company_id: company.id,
-          user_id: authData.user.id,
-          role: 'owner',
-          active: true,
-          can_access_pdv: true,
-          can_view_reports: true,
-          can_manage_products: true,
-          can_manage_sellers: true
-        }]);
-
-      if (userCompanyError) throw userCompanyError;
-
-      alert(`Empresa criada com sucesso!\n\nCredenciais de acesso:\nEmail: ${formData.user_email}\nSenha: ${formData.user_password}\n\nTipo: ${formData.access_type === 'shared' ? 'Acesso Compartilhado' : 'Acesso Individual'}\n\n⚠️ Você será deslogado momentaneamente, mas o sistema fará login automático novamente.`);
+      alert(`✅ Empresa criada com sucesso!\n\nCredenciais:\nEmail: ${formData.user_email}\nSenha: ${formData.user_password}`);
       
       onSuccess();
       onClose();
       
-      // Limpar formulário
       setFormData({
         name: '',
         email: '',

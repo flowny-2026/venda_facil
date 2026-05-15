@@ -1,13 +1,14 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { Eye, Mail, Phone, Building2, Calendar, Filter, RefreshCw } from 'lucide-react';
+import { Eye, Mail, Phone, Building2, Calendar, Filter, RefreshCw, ArrowLeft } from 'lucide-react';
 
 interface Lead {
   id: string;
   company_name: string;
-  contact_name: string;
-  contact_email: string;
-  contact_phone: string;
+  name: string;
+  email: string;
+  phone: string;
   business_type: string | null;
   message: string | null;
   status: 'novo' | 'contatado' | 'convertido' | 'descartado';
@@ -38,6 +39,7 @@ const businessTypeLabels: Record<string, string> = {
 };
 
 export default function Leads() {
+  const navigate = useNavigate();
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
@@ -67,12 +69,29 @@ export default function Leads() {
 
   async function updateLeadStatus(leadId: string, newStatus: Lead['status']) {
     try {
-      const { error } = await supabase
+      console.log('🔄 Atualizando status do lead:', leadId, 'para:', newStatus);
+      
+      const { data, error } = await supabase
         .from('landing_leads')
         .update({ status: newStatus })
-        .eq('id', leadId);
+        .eq('id', leadId)
+        .select(); // Adicionar select para ver o que foi atualizado
 
-      if (error) throw error;
+      console.log('📊 Resultado da atualização:');
+      console.log('   - data:', data);
+      console.log('   - error:', error);
+
+      if (error) {
+        console.error('❌ Erro ao atualizar no banco:', error);
+        throw error;
+      }
+
+      // Verificar se realmente atualizou
+      if (data && data.length > 0) {
+        console.log('✅ Lead atualizado no banco:', data[0]);
+      } else {
+        console.warn('⚠️ Nenhum lead foi atualizado no banco!');
+      }
 
       // Atualizar localmente
       setLeads(leads.map(lead => 
@@ -83,10 +102,35 @@ export default function Leads() {
         setSelectedLead({ ...selectedLead, status: newStatus });
       }
 
+      console.log('✅ Status atualizado com sucesso!');
       alert('Status atualizado com sucesso!');
+      
+      // Verificar no banco após 1 segundo
+      setTimeout(async () => {
+        console.log('🔍 Verificando se a mudança persistiu no banco...');
+        const { data: checkData, error: checkError } = await supabase
+          .from('landing_leads')
+          .select('id, status')
+          .eq('id', leadId)
+          .single();
+          
+        if (checkError) {
+          console.error('❌ Erro ao verificar:', checkError);
+        } else {
+          console.log('📋 Status atual no banco:', checkData);
+          if (checkData.status === newStatus) {
+            console.log('✅ Mudança confirmada no banco!');
+          } else {
+            console.error('❌ Mudança NÃO foi salva no banco!');
+            console.error('   - Esperado:', newStatus);
+            console.error('   - Atual no banco:', checkData.status);
+          }
+        }
+      }, 1000);
+      
     } catch (error) {
-      console.error('Erro ao atualizar status:', error);
-      alert('Erro ao atualizar status');
+      console.error('❌ Erro ao atualizar status:', error);
+      alert('Erro ao atualizar status: ' + (error as any).message);
     }
   }
 
@@ -105,9 +149,18 @@ export default function Leads() {
     <div className="p-6 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-100">Leads da Landing Page</h1>
-          <p className="text-slate-400 mt-1">Gerencie os contatos recebidos pelo formulário</p>
+        <div className="flex items-center gap-4">
+          <button
+            onClick={() => navigate('/')}
+            className="flex items-center gap-2 px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Voltar
+          </button>
+          <div>
+            <h1 className="text-2xl font-bold text-slate-100">Leads da Landing Page</h1>
+            <p className="text-slate-400 mt-1">Gerencie os contatos recebidos pelo formulário</p>
+          </div>
         </div>
         <button
           onClick={loadLeads}
@@ -184,17 +237,17 @@ export default function Leads() {
                       <span className="text-slate-100 font-medium">{lead.company_name}</span>
                     </div>
                   </td>
-                  <td className="px-6 py-4 text-slate-300">{lead.contact_name}</td>
+                  <td className="px-6 py-4 text-slate-300">{lead.name}</td>
                   <td className="px-6 py-4">
-                    <a href={`mailto:${lead.contact_email}`} className="text-blue-400 hover:underline flex items-center gap-1">
+                    <a href={`mailto:${lead.email}`} className="text-blue-400 hover:underline flex items-center gap-1">
                       <Mail className="w-4 h-4" />
-                      {lead.contact_email}
+                      {lead.email}
                     </a>
                   </td>
                   <td className="px-6 py-4">
-                    <a href={`tel:${lead.contact_phone}`} className="text-green-400 hover:underline flex items-center gap-1">
+                    <a href={`tel:${lead.phone}`} className="text-green-400 hover:underline flex items-center gap-1">
                       <Phone className="w-4 h-4" />
-                      {lead.contact_phone}
+                      {lead.phone}
                     </a>
                   </td>
                   <td className="px-6 py-4">
@@ -241,7 +294,7 @@ export default function Leads() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="text-slate-400 text-sm">Nome do Contato</label>
-                  <div className="text-slate-100">{selectedLead.contact_name}</div>
+                  <div className="text-slate-100">{selectedLead.name}</div>
                 </div>
                 <div>
                   <label className="text-slate-400 text-sm">Tipo de Negócio</label>
@@ -253,15 +306,15 @@ export default function Leads() {
 
               <div>
                 <label className="text-slate-400 text-sm">Email</label>
-                <a href={`mailto:${selectedLead.contact_email}`} className="text-blue-400 hover:underline block">
-                  {selectedLead.contact_email}
+                <a href={`mailto:${selectedLead.email}`} className="text-blue-400 hover:underline block">
+                  {selectedLead.email}
                 </a>
               </div>
 
               <div>
                 <label className="text-slate-400 text-sm">Telefone/WhatsApp</label>
-                <a href={`tel:${selectedLead.contact_phone}`} className="text-green-400 hover:underline block">
-                  {selectedLead.contact_phone}
+                <a href={`tel:${selectedLead.phone}`} className="text-green-400 hover:underline block">
+                  {selectedLead.phone}
                 </a>
               </div>
 

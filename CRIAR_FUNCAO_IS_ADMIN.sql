@@ -1,36 +1,24 @@
 -- ========================================
--- CRIAR FUNÇÃO is_admin
--- Verifica se um usuário é administrador
+-- CRIAR FUNÇÃO RPC: is_admin()
 -- ========================================
+-- Esta função verifica se um usuário é administrador
+-- Retorna TRUE se for super_admin, FALSE caso contrário
 
--- Remover função antiga se existir
-DROP FUNCTION IF EXISTS is_admin(UUID);
-
--- Criar função nova
 CREATE OR REPLACE FUNCTION is_admin(user_uuid UUID)
-RETURNS BOOLEAN
-LANGUAGE plpgsql
-SECURITY DEFINER
-AS $$
+RETURNS BOOLEAN AS $$
 BEGIN
-  -- Verificar se o usuário existe na tabela admin_users e está ativo
+  -- Verificar se o usuário tem role 'super_admin' na tabela user_roles
   RETURN EXISTS (
     SELECT 1 
-    FROM admin_users 
+    FROM user_roles 
     WHERE user_id = user_uuid 
-    AND active = true
+    AND role = 'super_admin'
   );
 END;
-$$;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Dar permissão para usuários autenticados executarem a função
-GRANT EXECUTE ON FUNCTION is_admin(UUID) TO authenticated;
+-- Dar permissão para usuários anônimos chamarem a função
+GRANT EXECUTE ON FUNCTION is_admin(UUID) TO anon, authenticated;
 
--- Testar a função com seu usuário
-SELECT 
-  u.email,
-  au.user_id,
-  is_admin(au.user_id) as is_admin_result
-FROM auth.users u
-JOIN admin_users au ON au.user_id = u.id
-WHERE u.email = 'edicharlesbrito2009@hotmail.com';
+-- Comentário explicativo
+COMMENT ON FUNCTION is_admin(user_uuid UUID) IS 'Verifica se um usuário é administrador (super_admin)';

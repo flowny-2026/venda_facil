@@ -59,11 +59,11 @@ export default function Produtos() {
     description: '',
     barcode: '',
     sku: '',
-    price: 0,
-    cost_price: 0,
-    promotional_price: 0,
-    stock_quantity: 0,
-    min_stock: 0,
+    price: '' as any,
+    cost_price: '' as any,
+    promotional_price: '' as any,
+    stock_quantity: '' as any,
+    min_stock: '' as any,
     category_id: '',
     track_stock: true
   });
@@ -161,11 +161,11 @@ export default function Produtos() {
         description: newProduct.description || '',
         barcode: newProduct.barcode || '',
         sku: newProduct.sku || '',
-        price: newProduct.price,
-        cost_price: newProduct.cost_price || 0,
-        promotional_price: newProduct.promotional_price || null,
-        stock_quantity: newProduct.stock_quantity || 0,
-        min_stock: newProduct.min_stock || 0,
+        price: parseFloat(newProduct.price) || 0,
+        cost_price: parseFloat(newProduct.cost_price) || 0,
+        promotional_price: newProduct.promotional_price ? parseFloat(newProduct.promotional_price) : null,
+        stock_quantity: parseInt(newProduct.stock_quantity) || 0,
+        min_stock: parseInt(newProduct.min_stock) || 0,
         category_id: newProduct.category_id || null,
         track_stock: newProduct.track_stock,
         company_id: companyId, // CORRETO: usar company_id da empresa
@@ -285,11 +285,11 @@ export default function Produtos() {
       description: '',
       barcode: '',
       sku: '',
-      price: 0,
-      cost_price: 0,
-      promotional_price: 0,
-      stock_quantity: 0,
-      min_stock: 0,
+      price: '' as any,
+      cost_price: '' as any,
+      promotional_price: '' as any,
+      stock_quantity: '' as any,
+      min_stock: '' as any,
       category_id: '',
       track_stock: true
     });
@@ -660,7 +660,8 @@ export default function Produtos() {
                     step="0.01"
                     min="0"
                     value={newProduct.price}
-                    onChange={(e) => setNewProduct({...newProduct, price: parseFloat(e.target.value) || 0})}
+                    onChange={(e) => setNewProduct({...newProduct, price: e.target.value})}
+                    placeholder="0.00"
                     className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-green-500/50"
                     required
                   />
@@ -673,7 +674,8 @@ export default function Produtos() {
                     step="0.01"
                     min="0"
                     value={newProduct.cost_price}
-                    onChange={(e) => setNewProduct({...newProduct, cost_price: parseFloat(e.target.value) || 0})}
+                    onChange={(e) => setNewProduct({...newProduct, cost_price: e.target.value})}
+                    placeholder="0.00"
                     className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-green-500/50"
                   />
                 </div>
@@ -685,7 +687,8 @@ export default function Produtos() {
                     step="0.01"
                     min="0"
                     value={newProduct.promotional_price}
-                    onChange={(e) => setNewProduct({...newProduct, promotional_price: parseFloat(e.target.value) || 0})}
+                    onChange={(e) => setNewProduct({...newProduct, promotional_price: e.target.value})}
+                    placeholder="0.00"
                     className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-green-500/50"
                   />
                 </div>
@@ -698,7 +701,8 @@ export default function Produtos() {
                     type="number"
                     min="0"
                     value={newProduct.stock_quantity}
-                    onChange={(e) => setNewProduct({...newProduct, stock_quantity: parseInt(e.target.value) || 0})}
+                    onChange={(e) => setNewProduct({...newProduct, stock_quantity: e.target.value})}
+                    placeholder="0"
                     className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-green-500/50"
                     disabled={!newProduct.track_stock}
                   />
@@ -710,7 +714,8 @@ export default function Produtos() {
                     type="number"
                     min="0"
                     value={newProduct.min_stock}
-                    onChange={(e) => setNewProduct({...newProduct, min_stock: parseInt(e.target.value) || 0})}
+                    onChange={(e) => setNewProduct({...newProduct, min_stock: e.target.value})}
+                    placeholder="0"
                     className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-green-500/50"
                     disabled={!newProduct.track_stock}
                   />

@@ -1,6 +1,6 @@
 import { ReactNode } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { BarChart3, FileText, Settings, ShoppingCart, Package, Users, CreditCard } from "lucide-react";
+import { BarChart3, FileText, Settings, ShoppingCart, Package, Users, CreditCard, UserCheck } from "lucide-react";
 import { useUserRole } from "../hooks/useUserRole";
 
 export default function Layout({ children }: { children: ReactNode }) {
@@ -10,6 +10,7 @@ export default function Layout({ children }: { children: ReactNode }) {
   const allNavigation = [
     { name: "Painel", href: "/", icon: BarChart3, requiresPermission: null },
     { name: "PDV", href: "/pdv", icon: ShoppingCart, requiresPermission: 'canAccessPdv' },
+    { name: "Clientes", href: "/clientes", icon: UserCheck, requiresPermission: null },
     { name: "Produtos", href: "/produtos", icon: Package, requiresPermission: 'canManageProducts' },
     { name: "Vendedores", href: "/vendedores", icon: Users, requiresPermission: 'canManageSellers' },
     { name: "Pagamentos", href: "/pagamentos", icon: CreditCard, requiresPermission: null },

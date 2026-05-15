@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { useUserRole } from '../hooks/useUserRole';
-import { printReceipt, downloadReceipt } from '../components/PrintReceipt';
+import ReceiptModal from '../components/ReceiptModal';
+import QuickCustomerModal from '../components/QuickCustomerModal';
+import { ReceiptSale, ReceiptCompany } from '../components/Receipt';
 import { 
   ShoppingCart, 
   Plus, 
@@ -15,9 +17,7 @@ import {
   Check,
   Search,
   Package,
-  Printer,
-  Download,
-  X
+  UserPlus
 } from 'lucide-react';
 
 interface Product {
@@ -63,16 +63,20 @@ export default function PDV() {
   const [selectedSeller, setSelectedSeller] = useState<string>('');
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string>('');
   const [searchTerm, setSearchTerm] = useState('');
-  const [discountAmount, setDiscountAmount] = useState(0);
+  const [discountAmount, setDiscountAmount] = useState<any>('');
   const [discountType, setDiscountType] = useState<'amount' | 'percentage'>('amount');
-  const [paymentReceived, setPaymentReceived] = useState(0);
+  const [paymentReceived, setPaymentReceived] = useState<any>('');
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
   
   // Estados para impressão de cupom
-  const [lastSale, setLastSale] = useState<any>(null);
-  const [showPrintModal, setShowPrintModal] = useState(false);
+  const [lastSale, setLastSale] = useState<ReceiptSale | null>(null);
+  const [showReceiptModal, setShowReceiptModal] = useState(false);
   const [companyData, setCompanyData] = useState<any>(null);
+  
+  // Estados para cadastro de cliente
+  const [showCustomerModal, setShowCustomerModal] = useState(false);
+  const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
 
   // Buscar company_id
   useEffect(() => {
@@ -230,8 +234,8 @@ export default function PDV() {
     setCart([]);
     setSelectedSeller('');
     setSelectedPaymentMethod('');
-    setDiscountAmount(0);
-    setPaymentReceived(0);
+    setDiscountAmount('');
+    setPaymentReceived('');
     setSearchTerm('');
   };
 
@@ -239,14 +243,16 @@ export default function PDV() {
     const subtotal = cart.reduce((sum, item) => sum + item.total_price, 0);
     
     let discount = 0;
+    const discountValue = parseFloat(discountAmount) || 0;
     if (discountType === 'percentage') {
-      discount = (subtotal * discountAmount) / 100;
+      discount = (subtotal * discountValue) / 100;
     } else {
-      discount = discountAmount;
+      discount = discountValue;
     }
     
     const total = subtotal - discount;
-    const change = paymentReceived - total;
+    const received = parseFloat(paymentReceived) || 0;
+    const change = received - total;
     
     return { subtotal, discount, total, change };
   };
@@ -267,198 +273,115 @@ export default function PDV() {
       return;
     }
 
-    const { total } = calculateTotals();
+    const { subtotal, discount, total, change } = calculateTotals();
     
-    if (paymentReceived < total) {
+    if (parseFloat(paymentReceived) < total) {
       alert('Valor recebido é menor que o total da venda!');
       return;
     }
 
+    // Abrir modal para vincular cliente
+    setShowCustomerModal(true);
+  };
+
+  const finalizeSale = async (customerId: string | null) => {
+    const { subtotal, discount, total, change } = calculateTotals();
     setProcessing(true);
 
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      
-      // Tentar obter company_id válido
-      let companyId = localStorage.getItem('company_id');
-      
-      // Se não tiver company_id, tentar obter da tabela company_users
-      if (!companyId && user?.id) {
-        const { data: companyUser } = await supabase
-          .from('company_users')
-          .select('company_id')
-          .eq('user_id', user.id)
-          .eq('active', true)
-          .single();
-        
-        if (companyUser) {
-          companyId = companyUser.company_id;
-          localStorage.setItem('company_id', companyId);
-        }
-      }
-      
-      // Se ainda não tiver, usar o user_id como fallback
-      if (!companyId) {
-        companyId = user?.id;
-      }
-      
-      const { subtotal, discount, change } = calculateTotals();
+      if (!user) throw new Error('Usuário não autenticado');
 
-      // Tentar inserir venda com estrutura mínima primeiro
-      let saleData: any = {
-        amount: subtotal,
-        status: 'paid',
-        company_id: companyId,
-        user_id: user?.id
-      };
+      // Busca company_id do usuário logado
+      const { data: companyUser } = await supabase
+        .from('company_users')
+        .select('company_id')
+        .eq('user_id', user.id)
+        .eq('active', true)
+        .single();
 
-      // Adicionar campos do PDV se disponíveis
-      try {
-        saleData = {
-          ...saleData,
-          discount_amount: discount,
-          total_amount: total,
-          payment_received: paymentReceived,
-          change_amount: change,
-          seller_id: selectedSeller,
-          payment_method_id: selectedPaymentMethod
-        };
-      } catch (e) {
-        console.log('Usando estrutura básica da tabela sales');
-      }
+      if (!companyUser) throw new Error('Empresa não encontrada');
 
-      console.log('Tentando inserir venda:', saleData);
-
+      // Insere a venda
       const { data: sale, error: saleError } = await supabase
         .from('sales')
-        .insert([saleData])
+        .insert([{
+          company_id: companyUser.company_id,
+          user_id: user.id,
+          seller_id: selectedSeller,
+          payment_method_id: selectedPaymentMethod,
+          customer_id: customerId, // Vincular cliente à venda
+          subtotal: subtotal,
+          discount_amount: discount,
+          total_amount: total,
+          payment_received: parseFloat(paymentReceived),
+          change_amount: Math.max(0, change),
+          status: 'paid'
+        }])
         .select()
         .single();
 
-      if (saleError) {
-        console.error('Erro detalhado da venda:', saleError);
-        
-        // Se der erro, tentar com estrutura ainda mais básica
-        if (saleError.message?.includes('column') || saleError.code === '42703' || saleError.message?.includes('check') || saleError.message?.includes('foreign key')) {
-          console.log('Tentando com estrutura básica sem foreign keys...');
-          
-          // Tentar sem company_id se der erro de foreign key
-          const basicSaleData: any = {
-            amount: total,
-            status: 'paid',
-            user_id: user?.id,
-            description: `Venda PDV - ${cart.length} item(s)`,
-            customer: 'Cliente PDV',
-            email: 'cliente@pdv.com',
-            category: 'vendas'
-          };
-          
-          // Só adicionar company_id se não for o que está causando erro
-          if (!saleError.message?.includes('company_id')) {
-            basicSaleData.company_id = companyId;
-          }
+      if (saleError) throw new Error(`Erro ao criar venda: ${saleError.message}`);
 
-          const { data: basicSale, error: basicError } = await supabase
-            .from('sales')
-            .insert([basicSaleData])
-            .select()
-            .single();
+      // Insere os itens da venda
+      const saleItems = cart.map(item => ({
+        sale_id: sale.id,
+        company_id: companyUser.company_id,
+        product_id: item.product.id,
+        product_name: item.product.name,
+        quantity: item.quantity,
+        unit_price: item.unit_price,
+        total_price: item.total_price
+      }));
 
-          if (basicError) {
-            throw new Error(`Erro ao criar venda: ${basicError.message}`);
-          }
-          
-          // Usar a venda básica
-          saleData = basicSale;
-        } else {
-          throw new Error(`Erro ao criar venda: ${saleError.message || JSON.stringify(saleError)}`);
-        }
-      } else {
-        saleData = sale;
-      }
+      const { error: itemsError } = await supabase
+        .from('sale_items')
+        .insert(saleItems);
 
-      // Tentar criar os itens da venda se a tabela existir
-      try {
-        const saleItems = cart.map(item => ({
-          sale_id: saleData.id,
-          product_id: item.product.id,
-          product_name: item.product.name,
-          quantity: item.quantity,
-          unit_price: item.unit_price,
-          total_price: item.total_price,
-          company_id: companyId
-        }));
-
-        const { error: itemsError } = await supabase
-          .from('sale_items')
-          .insert(saleItems);
-
-        if (itemsError) {
-          console.warn('Erro ao criar itens da venda (tabela pode não existir):', itemsError);
-        }
-      } catch (itemsErr) {
-        console.warn('Tabela sale_items não existe ainda:', itemsErr);
-      }
+      if (itemsError) console.warn('Erro ao criar itens:', itemsError);
 
       // Atualizar estoque dos produtos (se controlado)
       for (const item of cart) {
         if (item.product.track_stock) {
-          try {
-            const { error: stockError } = await supabase
-              .from('products')
-              .update({ 
-                stock_quantity: item.product.stock_quantity - item.quantity 
-              })
-              .eq('id', item.product.id);
-
-            if (stockError) {
-              console.warn('Erro ao atualizar estoque:', stockError);
-            }
-          } catch (stockErr) {
-            console.warn('Erro ao atualizar estoque do produto:', item.product.name, stockErr);
-          }
+          await supabase
+            .from('products')
+            .update({ 
+              stock_quantity: item.product.stock_quantity - item.quantity 
+            })
+            .eq('id', item.product.id);
         }
       }
 
-      // Preparar dados da venda para impressão
+      // Prepara dados para o cupom
       const seller = sellers.find(s => s.id === selectedSeller);
       const paymentMethod = paymentMethods.find(pm => pm.id === selectedPaymentMethod);
-      
-      // Pegar o primeiro produto do carrinho para o cupom
-      const firstItem = cart[0];
-      
-      const saleForPrint = {
-        id: saleData.id,
-        product_name: cart.length === 1 
-          ? firstItem.product.name 
-          : `${cart.length} produtos`,
-        quantity: cart.reduce((sum, item) => sum + item.quantity, 0),
-        unit_price: cart.length === 1 ? firstItem.unit_price : total / cart.reduce((sum, item) => sum + item.quantity, 0),
-        total_amount: total,
-        payment_method_name: paymentMethod?.name || 'Não informado',
+
+      const receiptSale: ReceiptSale = {
+        id: sale.id,
+        receipt_number: sale.receipt_number || `TEMP-${Date.now()}`,
+        created_at: sale.created_at || new Date().toISOString(),
         seller_name: seller?.name || 'Não informado',
-        created_at: new Date().toISOString(),
+        payment_method_name: paymentMethod?.name || 'Não informado',
+        subtotal,
+        discount,
+        total_amount: total,
+        payment_received: parseFloat(paymentReceived) || 0,
+        change_amount: Math.max(0, change),
+        items: cart.map(item => ({
+          product_name: item.product.name,
+          quantity: item.quantity,
+          unit_price: item.unit_price,
+          total_price: item.total_price
+        }))
       };
 
-      setLastSale(saleForPrint);
-      setShowPrintModal(true);
-      
+      setLastSale(receiptSale);
+      setShowReceiptModal(true);
       clearCart();
-      loadData(); // Recarregar produtos para atualizar estoque
+      loadData();
     } catch (error: any) {
       console.error('Erro ao processar venda:', error);
-      
-      // Mostrar erro mais detalhado
-      let errorMessage = 'Erro desconhecido';
-      if (error.message) {
-        errorMessage = error.message;
-      } else if (error.error_description) {
-        errorMessage = error.error_description;
-      } else if (typeof error === 'string') {
-        errorMessage = error;
-      }
-      
-      alert(`Erro ao processar venda:\n${errorMessage}\n\nVerifique se:\n- Executou o script SQL de correção\n- Vendedor e forma de pagamento estão selecionados\n- Há produtos no carrinho`);
+      alert('Erro ao processar venda:\n' + error.message);
     } finally {
       setProcessing(false);
     }
@@ -686,7 +609,7 @@ export default function PDV() {
                 step="0.01"
                 min="0"
                 value={discountAmount}
-                onChange={(e) => setDiscountAmount(parseFloat(e.target.value) || 0)}
+                onChange={(e) => setDiscountAmount(e.target.value)}
                 className="flex-1 bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
                 placeholder="0,00"
               />
@@ -728,7 +651,7 @@ export default function PDV() {
               step="0.01"
               min="0"
               value={paymentReceived}
-              onChange={(e) => setPaymentReceived(parseFloat(e.target.value) || 0)}
+              onChange={(e) => setPaymentReceived(e.target.value)}
               className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
               placeholder="0,00"
             />
@@ -785,82 +708,35 @@ export default function PDV() {
         )}
       </div>
 
-      {/* Modal de Impressão de Cupom */}
-      {showPrintModal && lastSale && companyData && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-md w-full shadow-2xl">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-bold text-slate-100 flex items-center gap-2">
-                <Check className="w-6 h-6 text-emerald-400" />
-                Venda Finalizada!
-              </h3>
-              <button
-                onClick={() => setShowPrintModal(false)}
-                className="text-slate-400 hover:text-slate-200 transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
+      {/* Modal de Cliente */}
+      {showCustomerModal && companyId && (
+        <QuickCustomerModal
+          isOpen={showCustomerModal}
+          onClose={() => setShowCustomerModal(false)}
+          onSelectCustomer={(customerId) => {
+            setSelectedCustomerId(customerId);
+            finalizeSale(customerId);
+          }}
+          companyId={companyId}
+        />
+      )}
 
-            <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-4 mb-6">
-              <div className="flex justify-between items-center mb-2">
-                <span className="text-slate-400">Total:</span>
-                <span className="text-2xl font-bold text-emerald-400">
-                  {formatCurrency(lastSale.total_amount)}
-                </span>
-              </div>
-              <div className="flex justify-between items-center text-sm">
-                <span className="text-slate-400">Troco:</span>
-                <span className="text-slate-200">
-                  {formatCurrency(change)}
-                </span>
-              </div>
-            </div>
-
-            <div className="space-y-3">
-              <button
-                onClick={() => {
-                  printReceipt(lastSale, {
-                    name: companyData.name,
-                    cnpj: companyData.cnpj,
-                    address: companyData.address,
-                    phone: companyData.phone,
-                  });
-                }}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
-              >
-                <Printer className="w-5 h-5" />
-                Imprimir Cupom
-              </button>
-
-              <button
-                onClick={() => {
-                  downloadReceipt(lastSale, {
-                    name: companyData.name,
-                    cnpj: companyData.cnpj,
-                    address: companyData.address,
-                    phone: companyData.phone,
-                  });
-                }}
-                className="w-full bg-slate-700 hover:bg-slate-600 text-white px-4 py-3 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
-              >
-                <Download className="w-5 h-5" />
-                Baixar PDF
-              </button>
-
-              <button
-                onClick={() => setShowPrintModal(false)}
-                className="w-full bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-3 rounded-lg font-medium transition-colors"
-              >
-                Fechar
-              </button>
-            </div>
-
-            <p className="text-xs text-slate-500 text-center mt-4">
-              Cupom não fiscal - Não válido como documento fiscal
-            </p>
-          </div>
-        </div>
+      {/* Modal de Cupom */}
+      {showReceiptModal && lastSale && companyData && (
+        <ReceiptModal
+          isOpen={showReceiptModal}
+          onClose={() => setShowReceiptModal(false)}
+          sale={lastSale}
+          company={{
+            name: companyData.name,
+            phone: companyData.phone,
+            cnpj: companyData.document || companyData.cnpj,
+            address: companyData.address,
+            city: companyData.city,
+            state: companyData.state,
+            logo_url: companyData.logo_url
+          }}
+        />
       )}
     </div>
   );

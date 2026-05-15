@@ -6,6 +6,7 @@ import Layout from "./components/Layout";
 import Dashboard from "./pages/Dashboard";
 import PDV from "./pages/PDV";
 import Produtos from "./pages/Produtos";
+import Clientes from "./pages/Clientes";
 import Vendedores from "./pages/Vendedores";
 import FormasPagamento from "./pages/FormasPagamento";
 import Relatorios from "./pages/Relatorios";
@@ -22,6 +23,7 @@ function App() {
   const [useSupabase, setUseSupabase] = useState(false);
   const [hasActiveCompany, setHasActiveCompany] = useState<boolean | null>(null);
   const [checkingCompany, setCheckingCompany] = useState(true);
+  const [lastUserId, setLastUserId] = useState<string | null>(null);
 
   // Verificar se deve usar Supabase
   useEffect(() => {
@@ -33,15 +35,32 @@ function App() {
     setUseSupabase(isValidConfig);
   }, []);
 
+  // Salvar ID do usuário atual sem verificar conflitos
+  // CORREÇÃO: Não forçar logout quando usuário muda (permite criação de login de vendedores)
+  useEffect(() => {
+    if (user && user.id) {
+      // Apenas salvar o ID do usuário atual
+      sessionStorage.setItem('current_user_id', user.id);
+      setLastUserId(user.id);
+    } else if (!user) {
+      // Limpar ID quando não há usuário
+      sessionStorage.removeItem('current_user_id');
+      setLastUserId(null);
+    }
+  }, [user]);
+
   // Verificar se o usuário tem empresa ativa
   useEffect(() => {
     const checkUserCompany = async () => {
       if (!user || !useSupabase) {
         setCheckingCompany(false);
+        setHasActiveCompany(true); // Permite acesso se não estiver usando Supabase
         return;
       }
 
       try {
+        setCheckingCompany(true);
+        
         // Buscar empresa do usuário
         const { data: companyUser, error } = await supabase
           .from('company_users')
@@ -56,11 +75,12 @@ function App() {
           `)
           .eq('user_id', user.id)
           .eq('active', true)
-          .maybeSingle(); // Mudado de .single() para .maybeSingle()
+          .maybeSingle();
 
         if (error) {
           console.error('Erro ao buscar empresa:', error);
           setHasActiveCompany(false);
+          setCheckingCompany(false);
           await signOut();
           return;
         }
@@ -68,6 +88,7 @@ function App() {
         if (!companyUser || !companyUser.companies) {
           console.error('Usuário sem empresa ativa');
           setHasActiveCompany(false);
+          setCheckingCompany(false);
           await signOut();
           return;
         }
@@ -75,17 +96,18 @@ function App() {
         if (companyUser.companies.status !== 'active') {
           console.error('Empresa não está ativa');
           setHasActiveCompany(false);
+          setCheckingCompany(false);
           await signOut();
           return;
         }
 
         setHasActiveCompany(true);
+        setCheckingCompany(false);
       } catch (err) {
         console.error('Erro ao verificar empresa:', err);
         setHasActiveCompany(false);
-        await signOut();
-      } finally {
         setCheckingCompany(false);
+        await signOut();
       }
     };
 
@@ -201,6 +223,7 @@ function App() {
             <Routes>
               <Route path="/" element={<Dashboard />} />
               <Route path="/pdv" element={<PDV />} />
+              <Route path="/clientes" element={<Clientes />} />
               <Route path="/produtos" element={<Produtos />} />
               {/* Vendedores: sempre mostrar se não for vendedor */}
               {!isSeller && <Route path="/vendedores" element={<Vendedores />} />}

@@ -1,4 +1,4 @@
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 import { useAuth } from "./hooks/useAuth";
 import { RefreshCw, User, Lock } from "lucide-react";
 import Dashboard from "./pages/Dashboard";
@@ -15,76 +15,66 @@ function App() {
   const [loginForm, setLoginForm] = useState({ email: '', password: '' });
   const [loginError, setLoginError] = useState('');
   const [loginLoading, setLoginLoading] = useState(false);
-  const [autoLoginInProgress, setAutoLoginInProgress] = useState(false);
 
   // Verificar se usuário é admin
   useEffect(() => {
-    checkAdminStatus();
+    if (user) {
+      console.log('👤 Usuário carregado, verificando admin...', user.id);
+      checkAdminStatus();
+    } else {
+      console.log('❌ Nenhum usuário logado');
+      setIsAdmin(false);
+    }
   }, [user]);
 
-  // Auto-login se houver credenciais salvas e não estiver logado
-  useEffect(() => {
-    const attemptAutoLogin = async () => {
-      // VERIFICAÇÃO 1: Logout intencional?
-      const intentionalLogout = sessionStorage.getItem('intentional_logout');
-      if (intentionalLogout === 'true') {
-        console.log('⏸️ Auto-login desabilitado - logout foi intencional');
-        return;
-      }
-      
-      // VERIFICAÇÃO 2: Credenciais existem?
-      const savedEmail = localStorage.getItem('admin_email');
-      const savedPassword = localStorage.getItem('admin_password');
-      
-      if (!savedEmail || !savedPassword) {
-        console.log('⏸️ Auto-login desabilitado - sem credenciais salvas');
-        return;
-      }
-      
-      // VERIFICAÇÃO 3: Já está tentando ou tem usuário?
-      if (user || authLoading || autoLoginInProgress) {
-        return;
-      }
-      
-      // Tentar auto-login
-      console.log('🔄 Auto-login detectado. Email:', savedEmail);
-      setAutoLoginInProgress(true);
-      
-      try {
-        const { error } = await signIn(savedEmail, savedPassword);
-        if (error) {
-          console.error('❌ Erro no auto-login:', error);
-          localStorage.removeItem('admin_email');
-          localStorage.removeItem('admin_password');
-        } else {
-          console.log('✅ Auto-login realizado com sucesso!');
-        }
-      } catch (err) {
-        console.error('❌ Exceção no auto-login:', err);
-        localStorage.removeItem('admin_email');
-        localStorage.removeItem('admin_password');
-      } finally {
-        setAutoLoginInProgress(false);
-      }
-    };
-
-    attemptAutoLogin();
-  }, [user, authLoading, autoLoginInProgress]);
+  // Supabase já gerencia a sessão automaticamente
+  // Não precisa de auto-login manual
 
   const checkAdminStatus = async () => {
+    console.log('🔍 checkAdminStatus chamado, user:', user?.id);
+    
     if (!user) {
+      console.log('⚠️ Usuário não existe, setando isAdmin = false');
       setIsAdmin(false);
       return;
     }
 
     try {
+      console.log('📡 Buscando no Supabase...');
+      console.log('   - user_id:', user.id);
+      console.log('   - procurando role: super_admin');
+      console.log('   - procurando active: true');
+      
       const { data, error } = await supabase
-        .rpc('is_admin', { user_uuid: user.id });
+        .from('company_users')
+        .select('role, active, company_id')
+        .eq('user_id', user.id)
+        .eq('role', 'super_admin')
+        .eq('active', true)
+        .maybeSingle();
 
-      if (error) throw error;
-      setIsAdmin(data);
+      console.log('📊 Resultado da query:');
+      console.log('   - data:', data);
+      console.log('   - error:', error);
+
+      if (error) {
+        console.error('❌ Erro ao verificar admin:', error);
+        setIsAdmin(false);
+        return;
+      }
+
+      const isAdminUser = !!data;
+      console.log('✅ É admin?', isAdminUser);
+      
+      if (isAdminUser) {
+        console.log('🎉 ACESSO LIBERADO! Usuário é super_admin');
+      } else {
+        console.log('🚫 ACESSO NEGADO! Usuário não é super_admin');
+      }
+      
+      setIsAdmin(isAdminUser);
     } catch (error) {
-      console.error('Erro ao verificar admin:', error);
+      console.error('❌ Erro no catch:', error);
       setIsAdmin(false);
     }
   };
@@ -94,20 +84,17 @@ function App() {
     setLoginLoading(true);
     setLoginError('');
 
+    console.log('🔐 Tentando fazer login com:', loginForm.email);
+
     try {
       const { error } = await signIn(loginForm.email, loginForm.password);
       if (error) throw error;
       
-      // Limpar flag de logout intencional
-      sessionStorage.removeItem('intentional_logout');
-      
-      // Salvar credenciais para auto-login
-      console.log('💾 Salvando credenciais para auto-login:', loginForm.email);
-      localStorage.setItem('admin_email', loginForm.email);
-      localStorage.setItem('admin_password', loginForm.password);
-      console.log('✅ Credenciais salvas com sucesso!');
+      console.log('✅ Login realizado com sucesso!');
+      console.log('⏳ Aguardando verificação de admin...');
       
     } catch (err: any) {
+      console.error('❌ Erro no login:', err);
       setLoginError(err.message || 'Erro ao fazer login');
     } finally {
       setLoginLoading(false);
@@ -115,12 +102,12 @@ function App() {
   };
 
   // Tela de carregamento
-  if (authLoading || autoLoginInProgress) {
+  if (authLoading) {
     return (
       <div className="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center">
         <div className="flex items-center gap-2 text-slate-400">
           <RefreshCw className="w-5 h-5 animate-spin" />
-          {autoLoginInProgress ? 'Restaurando sessão...' : 'Carregando...'}
+          Carregando...
         </div>
       </div>
     );
@@ -193,9 +180,14 @@ function App() {
             </form>
             
             <div className="mt-6 pt-6 border-t border-slate-700">
-              <p className="text-center text-xs text-slate-500">
+              <p className="text-center text-xs text-slate-500 mb-3">
                 🔒 Sistema restrito para administradores autorizados
               </p>
+              <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-3">
+                <p className="text-xs text-blue-300 text-center">
+                  💡 Use o email do administrador do sistema
+                </p>
+              </div>
             </div>
           </div>
         </div>
@@ -205,40 +197,44 @@ function App() {
 
   // Verificar se é admin
   if (!isAdmin) {
-    const savedEmail = localStorage.getItem('admin_email');
-    const savedPassword = localStorage.getItem('admin_password');
-    
-    const handleManualAutoLogin = async () => {
-      if (savedEmail && savedPassword) {
-        setAutoLoginInProgress(true);
-        try {
-          await signIn(savedEmail, savedPassword);
-        } catch (err) {
-          console.error('Erro no login manual:', err);
-        } finally {
-          setAutoLoginInProgress(false);
-        }
-      }
+    const handleLogout = async () => {
+      console.log('🚪 Fazendo logout...');
+      await supabase.auth.signOut();
+      console.log('✅ Logout realizado!');
+      window.location.reload();
     };
-    
+
     return (
-      <div className="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center">
-        <div className="text-center">
+      <div className="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center p-4">
+        <div className="text-center max-w-md">
           <div className="p-3 bg-red-500/15 rounded-full mx-auto mb-4 w-fit">
             <Lock className="w-8 h-8 text-red-400" />
           </div>
           <h1 className="text-2xl font-bold text-red-400 mb-2">Acesso Negado</h1>
-          <p className="text-slate-400 mb-4">Você não tem permissão para acessar este sistema.</p>
+          <p className="text-slate-400 mb-2">Você não tem permissão para acessar este sistema.</p>
           <p className="text-sm text-slate-500 mb-6">Apenas administradores autorizados podem acessar.</p>
           
-          {savedEmail && savedPassword && (
-            <button
-              onClick={handleManualAutoLogin}
-              className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
-            >
-              Tentar Login Novamente
-            </button>
-          )}
+          {/* Informações do usuário logado */}
+          <div className="bg-slate-900/50 border border-slate-800 rounded-lg p-4 mb-6">
+            <p className="text-xs text-slate-500 mb-2">Você está logado como:</p>
+            <p className="text-sm text-slate-300 font-mono">{user?.email}</p>
+            <p className="text-xs text-slate-600 mt-1">ID: {user?.id}</p>
+          </div>
+
+          {/* Botão de Logout */}
+          <button
+            onClick={handleLogout}
+            className="w-full px-6 py-3 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg transition-colors font-medium"
+          >
+            🚪 Sair e Fazer Login com Outro Usuário
+          </button>
+
+          <div className="mt-6 p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg text-left">
+            <p className="text-xs text-blue-300 font-semibold mb-2">💡 Dica:</p>
+            <p className="text-xs text-slate-400">
+              Para acessar o painel admin, você precisa fazer login com um usuário que tenha a permissão de <span className="text-blue-400 font-mono">super_admin</span>.
+            </p>
+          </div>
         </div>
       </div>
     );
@@ -249,6 +245,7 @@ function App() {
     <div className="min-h-screen bg-slate-950 text-slate-100">
       <Routes>
         <Route path="/" element={<Dashboard />} />
+        <Route path="/dashboard" element={<Navigate to="/" replace />} />
         <Route path="/clientes" element={<Clientes />} />
         <Route path="/vendas" element={<Vendas />} />
         <Route path="/leads" element={<Leads />} />

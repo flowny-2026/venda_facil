@@ -54,8 +54,47 @@ export function useAuth() {
 
   // Função para fazer logout
   const signOut = async () => {
-    const { error } = await supabase.auth.signOut()
-    return { error }
+    try {
+      // Limpar sessão do Supabase
+      const { error } = await supabase.auth.signOut()
+      
+      // Limpar todos os dados relacionados ao usuário do localStorage
+      const keysToRemove = [
+        'supabase.auth.token',
+        'sb-cvmjjzhvdmpbxquxepue-auth-token',
+        'dashboard-vendas-data',
+        'theme'
+      ];
+      
+      keysToRemove.forEach(key => {
+        try {
+          localStorage.removeItem(key);
+        } catch (e) {
+          console.warn(`Erro ao remover ${key}:`, e);
+        }
+      });
+      
+      // Limpar todos os itens do localStorage que começam com 'sb-'
+      Object.keys(localStorage).forEach(key => {
+        if (key.startsWith('sb-')) {
+          try {
+            localStorage.removeItem(key);
+          } catch (e) {
+            console.warn(`Erro ao remover ${key}:`, e);
+          }
+        }
+      });
+      
+      // Forçar reload da página para garantir limpeza completa
+      setTimeout(() => {
+        window.location.reload();
+      }, 100);
+      
+      return { error }
+    } catch (err) {
+      console.error('Erro no logout:', err);
+      return { error: err }
+    }
   }
 
   // Função para resetar senha

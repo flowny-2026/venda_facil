@@ -76,7 +76,9 @@ export default function CreateSellerLoginModal({ seller, onClose, onSuccess }: C
           data: {
             seller_name: seller.name,
             company_id: companyId
-          }
+          },
+          // Desabilitar confirmação de email para evitar problemas
+          emailConfirm: false
         }
       });
 
@@ -90,21 +92,33 @@ export default function CreateSellerLoginModal({ seller, onClose, onSuccess }: C
       }
 
       console.log('✅ Usuário criado:', authData.user.id);
+      
+      // 2.1 CONFIRMAR EMAIL AUTOMATICAMENTE (evita problemas de login)
+      try {
+        await supabase.rpc('confirm_user_email', { user_email: email });
+        console.log('✅ Email confirmado automaticamente');
+      } catch (confirmError) {
+        console.warn('⚠️ Não foi possível confirmar email automaticamente:', confirmError);
+        // Não falhar por causa disso
+      }
 
       // 3. Vincular usuário ao vendedor na tabela company_users
+      // Usar UPSERT para garantir que sempre funcione
       const { error: linkError } = await supabase
         .from('company_users')
-        .insert({
+        .upsert({
           user_id: authData.user.id,
           company_id: companyId,
           seller_id: seller.id,
           role: 'seller',
           active: true,
-          can_view_company_profits: false,
           can_access_pdv: true,
           can_view_reports: false,
           can_manage_products: false,
           can_manage_sellers: false
+        }, {
+          onConflict: 'user_id,company_id',
+          ignoreDuplicates: false
         });
 
       if (linkError) {
@@ -113,6 +127,21 @@ export default function CreateSellerLoginModal({ seller, onClose, onSuccess }: C
       }
 
       console.log('✅ Vendedor vinculado à empresa');
+      
+      // 3.1 VERIFICAR SE A VINCULAÇÃO FOI BEM SUCEDIDA
+      const { data: verifyLink, error: verifyError } = await supabase
+        .from('company_users')
+        .select('user_id, company_id, seller_id, role')
+        .eq('user_id', authData.user.id)
+        .eq('company_id', companyId)
+        .single();
+      
+      if (verifyError || !verifyLink) {
+        console.error('❌ Falha na verificação da vinculação:', verifyError);
+        throw new Error('Usuário criado mas não foi vinculado corretamente. Tente novamente.');
+      }
+      
+      console.log('✅ Vinculação verificada:', verifyLink);
 
       // 4. Atualizar email do vendedor se necessário
       if (email !== seller.email) {
@@ -126,9 +155,16 @@ export default function CreateSellerLoginModal({ seller, onClose, onSuccess }: C
         }
       }
 
+      // 5. IMPORTANTE: Fazer logout do usuário temporário criado
+      // Isso evita que a sessão fique com o vendedor recém-criado
+      console.log('🔄 Fazendo logout do usuário temporário...');
+      await supabase.auth.signOut();
+      console.log('✅ Logout realizado');
+
       alert(`✅ Login criado com sucesso!\n\nCredenciais:\nEmail: ${email}\nSenha: ${password}\n\nEnvie essas credenciais para o vendedor.\n\n⚠️ O vendedor deve fazer login em: ${window.location.origin}`);
-      onSuccess();
-      onClose();
+      
+      // Recarregar a página para restaurar a sessão do gerente
+      window.location.reload();
     } catch (error: any) {
       console.error('Erro ao criar login:', error);
       setError(error.message || 'Erro ao criar login');

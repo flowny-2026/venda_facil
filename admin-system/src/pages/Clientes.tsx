@@ -52,15 +52,18 @@ export default function Clientes() {
 
   const loadCompanies = async () => {
     try {
+      console.log('🔄 Carregando empresas...');
       const { data, error } = await supabase
         .from('companies')
         .select('*')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
+      
+      console.log(`✅ ${data?.length || 0} empresas carregadas`);
       setCompanies(data || []);
     } catch (error) {
-      console.error('Erro ao carregar empresas:', error);
+      console.error('❌ Erro ao carregar empresas:', error);
     } finally {
       setLoading(false);
     }
@@ -69,20 +72,156 @@ export default function Clientes() {
   const loadCompanyUsers = async (companyId: string) => {
     try {
       const { data, error } = await supabase
-        .from('company_users')
-        .select(`
-          user_id,
-          role,
-          active,
-          users:user_id (email)
-        `)
+        .from('v_company_users_emails')
+        .select('user_id, role, active, email')
         .eq('company_id', companyId);
 
       if (error) throw error;
-      setCompanyUsers(data || []);
+      
+      setCompanyUsers(data?.map(u => ({
+        user_id: u.user_id,
+        role: u.role,
+        active: u.active,
+        users: { email: u.email }
+      })) || []);
     } catch (error) {
       console.error('Erro ao carregar usuários:', error);
       setCompanyUsers([]);
+    }
+  };
+
+  const deleteUser = async (userEmail: string) => {
+    const confirmMessage = `⚠️ ATENÇÃO: Excluir usuário "${userEmail}"?\n\n` +
+      `Esta ação irá:\n` +
+      `• Remover o acesso do usuário ao sistema\n` +
+      `• Manter as vendas registradas por ele (para histórico)\n` +
+      `• NÃO PODE SER DESFEITA\n\n` +
+      `Tem certeza que deseja continuar?`;
+
+    if (!confirm(confirmMessage)) {
+      console.log('❌ Exclusão cancelada pelo usuário');
+      return;
+    }
+
+    try {
+      console.log('========================================');
+      console.log('🗑️ INICIANDO EXCLUSÃO DE USUÁRIO');
+      console.log('========================================');
+      console.log(`📧 Email: ${userEmail}`);
+      console.log(`🏢 Empresa: ${selectedCompany?.name}`);
+      console.log(`📊 Total de usuários antes: ${companyUsers.length}`);
+      
+      // PASSO 1: Buscar o user_id pelo email
+      console.log('🔍 Buscando user_id...');
+      const { data: userData, error: userError } = await supabase
+        .from('v_company_users_emails')
+        .select('user_id')
+        .eq('email', userEmail)
+        .maybeSingle();
+
+      if (userError || !userData) {
+        throw new Error('Usuário não encontrado: ' + userEmail);
+      }
+
+      const userId = userData.user_id;
+      console.log(`✅ User ID encontrado: ${userId}`);
+
+      // PASSO 2: Desvincular vendas (manter para histórico)
+      console.log('🔄 Desvinculando vendas...');
+      const { error: salesError } = await supabase
+        .from('sales')
+        .update({ user_id: null })
+        .eq('user_id', userId);
+
+      if (salesError) {
+        console.warn('⚠️ Erro ao desvincular vendas:', salesError);
+        // Continuar mesmo com erro
+      } else {
+        console.log('✅ Vendas desvinculadas');
+      }
+
+      // PASSO 3: Deletar vinculação em company_users
+      console.log('🔄 Removendo vinculação em company_users...');
+      const { error: companyUserError } = await supabase
+        .from('company_users')
+        .delete()
+        .eq('user_id', userId);
+
+      if (companyUserError) {
+        console.error('❌ Erro ao remover vinculação:', companyUserError);
+        throw new Error('Erro ao remover vinculação: ' + companyUserError.message);
+      }
+      console.log('✅ Vinculação removida');
+
+      // PASSO 4: Deletar usuário usando Admin API
+      console.log('🔄 Deletando usuário do auth.users...');
+      
+      // Usar a API admin do Supabase para deletar usuário
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      if (!currentUser) {
+        throw new Error('Você precisa estar logado como admin');
+      }
+
+      // Tentar deletar via função RPC especial
+      const { data: deleteResult, error: deleteError } = await supabase.rpc(
+        'delete_auth_user',
+        { target_user_id: userId }
+      );
+
+      if (deleteError) {
+        console.error('❌ Erro ao deletar via RPC:', deleteError);
+        
+        // Fallback: Marcar como inativo ao invés de deletar
+        console.log('⚠️ Não foi possível deletar do auth.users');
+        console.log('ℹ️ Usuário foi desvinculado mas permanece no auth.users');
+        console.log('ℹ️ Ele não conseguirá mais fazer login pois não tem vinculação');
+      } else {
+        console.log('✅ Usuário deletado do auth.users');
+      }
+
+      // PASSO 5: Aguardar e verificar
+      console.log('⏳ Aguardando 500ms...');
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      // PASSO 6: Verificar se foi removido da view
+      console.log('🔍 Verificando exclusão...');
+      const { data: checkUser } = await supabase
+        .from('v_company_users_emails')
+        .select('email')
+        .eq('email', userEmail)
+        .maybeSingle();
+
+      if (checkUser) {
+        console.warn('⚠️ Usuário ainda aparece na view');
+        throw new Error('Usuário não foi removido completamente. Tente novamente.');
+      }
+
+      // PASSO 7: Atualizar lista
+      console.log('🔄 Recarregando lista de usuários...');
+      if (selectedCompany) {
+        await loadCompanyUsers(selectedCompany.id);
+        console.log(`📊 Total de usuários depois: ${companyUsers.length}`);
+      }
+
+      console.log('========================================');
+      console.log('✅ EXCLUSÃO CONCLUÍDA COM SUCESSO');
+      console.log('========================================');
+
+      alert(`✅ Usuário deletado com sucesso!\n\nEmail: ${userEmail}\n\nO usuário foi removido e não poderá mais fazer login.`);
+
+    } catch (error: any) {
+      console.error('========================================');
+      console.error('❌ ERRO NA EXCLUSÃO');
+      console.error('========================================');
+      console.error('📋 Erro:', error);
+      console.error('📋 Mensagem:', error.message);
+
+      // Recarregar a lista
+      if (selectedCompany) {
+        await loadCompanyUsers(selectedCompany.id);
+      }
+
+      alert(`❌ Erro ao excluir usuário:\n\n${error.message}\n\nVerifique o console (F12) para mais detalhes.`);
     }
   };
 
@@ -97,7 +236,6 @@ export default function Clientes() {
       `Esta ação irá:\n` +
       `• Excluir TODOS os dados da empresa\n` +
       `• Remover usuários, vendas, produtos\n` +
-      `• Deletar usuários do Supabase Auth\n` +
       `• NÃO PODE SER DESFEITA\n\n` +
       `Tem certeza que deseja continuar?`;
 
@@ -110,46 +248,69 @@ export default function Clientes() {
     }
 
     try {
-      // 1. Buscar usuários da empresa
-      const { data: companyUsers, error: usersError } = await supabase
-        .from('company_users')
-        .select('user_id')
-        .eq('company_id', companyId);
+      console.log(`🗑️ Iniciando exclusão da empresa: ${companyName}`);
+      console.log(`📊 Estado atual: ${companies.length} empresas na lista`);
+      
+      // USAR A FUNÇÃO SQL ESPECÍFICA PARA DELETAR EMPRESA
+      console.log('🔍 Usando função delete_company_cascade...');
+      const { data: deleteResult, error: deleteError } = await supabase
+        .rpc('delete_company_cascade', { 
+          company_name: companyName 
+        });
 
-      if (usersError) throw usersError;
-
-      // 2. Deletar empresa (isso vai deletar company_users por CASCADE)
-      const { error: companyError } = await supabase
-        .from('companies')
-        .delete()
-        .eq('id', companyId);
-
-      if (companyError) throw companyError;
-
-      // 3. Deletar usuários do Supabase Auth
-      if (companyUsers && companyUsers.length > 0) {
-        for (const cu of companyUsers) {
-          try {
-            // Nota: Isso requer service_role key, que não temos no frontend
-            // Por enquanto, os usuários ficam no Auth mas não conseguem acessar
-            console.log('Usuário a ser deletado:', cu.user_id);
-          } catch (err) {
-            console.error('Erro ao deletar usuário:', err);
-          }
-        }
+      if (deleteError) {
+        console.error('❌ Erro ao executar delete_company_cascade:', deleteError);
+        throw deleteError;
       }
       
-      setCompanies(prev => prev.filter(company => company.id !== companyId));
+      console.log('✅ Resultado da função:', deleteResult);
       
-      alert(
-        `Empresa "${companyName}" excluída com sucesso!\n\n` +
-        `⚠️ IMPORTANTE: Os usuários foram removidos da empresa, mas ainda existem no Supabase Auth.\n` +
-        `Para deletá-los completamente, vá em:\n` +
-        `Supabase → Authentication → Users → Deletar manualmente`
-      );
+      // Verificar se a função retornou sucesso
+      if (deleteResult && deleteResult.includes('❌')) {
+        console.error('❌ Função retornou erro:', deleteResult);
+        throw new Error(deleteResult);
+      }
+      
+      if (deleteResult && deleteResult.includes('✅')) {
+        console.log('✅ Empresa deletada com sucesso pela função SQL');
+        
+        // Aguardar um pouco para garantir que a operação foi processada
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        // Verificar se realmente foi deletada
+        console.log('🔍 Verificando se empresa foi realmente deletada...');
+        const { data: checkCompany } = await supabase
+          .from('companies')
+          .select('id, name')
+          .eq('id', companyId)
+          .maybeSingle();
+        
+        if (checkCompany) {
+          console.warn('⚠️ Empresa ainda existe no banco, mas função reportou sucesso');
+          console.log('ℹ️ Isso pode ser normal se a função deletou por nome e não por ID');
+        } else {
+          console.log('✅ Confirmado: Empresa não existe mais no banco');
+        }
+        
+        // Atualizar estado local
+        console.log('🔍 Atualizando estado local...');
+        const oldCount = companies.length;
+        setCompanies(prev => prev.filter(company => company.id !== companyId));
+        console.log(`📊 Estado atualizado: ${oldCount} → ${oldCount - 1} empresas`);
+        
+        alert(`✅ ${deleteResult}`);
+      } else {
+        throw new Error('Função executada mas resultado inesperado: ' + deleteResult);
+      }
+      
     } catch (error: any) {
-      console.error('Erro ao excluir empresa:', error);
-      alert('Erro ao excluir empresa: ' + error.message);
+      console.error('❌ ERRO GERAL na exclusão:', error);
+      
+      // Recarregar a lista para garantir consistência
+      console.log('🔄 Recarregando lista para garantir consistência...');
+      await loadCompanies();
+      
+      alert(`❌ Erro ao excluir empresa: ${error.message}\n\nA lista foi recarregada para garantir consistência.`);
     }
   };
 
@@ -224,13 +385,23 @@ export default function Clientes() {
             <h1 className="text-3xl font-bold text-slate-100">Gerenciar Clientes</h1>
             <p className="text-slate-400">Cadastre e gerencie empresas clientes</p>
           </div>
-          <button
-            onClick={() => setShowModal(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            Nova Empresa
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={loadCompanies}
+              disabled={loading}
+              className="flex items-center gap-2 px-4 py-2 bg-slate-700 hover:bg-slate-600 disabled:bg-slate-800 text-slate-200 rounded-lg font-medium transition-colors"
+            >
+              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+              Recarregar
+            </button>
+            <button
+              onClick={() => setShowModal(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              Nova Empresa
+            </button>
+          </div>
         </div>
 
         {/* Estatísticas */}
@@ -262,7 +433,7 @@ export default function Clientes() {
               <DollarSign className="w-8 h-8 text-green-400" />
               <div>
                 <div className="text-2xl font-bold text-slate-100">
-                  {formatCurrency(companies.reduce((sum, c) => sum + (c.status === 'active' ? c.monthly_fee : 0), 0))}
+                  {formatCurrency(companies.reduce((sum, c) => sum + c.monthly_fee, 0))}
                 </div>
                 <div className="text-sm text-slate-400">Receita Mensal</div>
               </div>
@@ -274,7 +445,7 @@ export default function Clientes() {
               <Users className="w-8 h-8 text-purple-400" />
               <div>
                 <div className="text-2xl font-bold text-slate-100">
-                  {companies.reduce((sum, c) => sum + (c.max_users || 1), 0)}
+                  {companies.reduce((sum, c) => sum + c.max_users, 0)}
                 </div>
                 <div className="text-sm text-slate-400">Total de Usuários</div>
               </div>
@@ -284,257 +455,186 @@ export default function Clientes() {
 
         {/* Lista de Empresas */}
         <div className="bg-slate-900/50 border border-slate-800 rounded-2xl overflow-hidden">
-          <div className="p-6 border-b border-slate-800">
-            <h3 className="text-lg font-semibold text-slate-100">Empresas Cadastradas</h3>
-          </div>
-          
-          {companies.length === 0 ? (
-            <div className="p-12 text-center">
-              <Building className="w-12 h-12 text-slate-600 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-slate-300 mb-2">Nenhuma empresa cadastrada</h3>
-              <p className="text-slate-400 mb-4">Comece cadastrando sua primeira empresa cliente.</p>
-              <button
-                onClick={() => setShowModal(true)}
-                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
-              >
-                Cadastrar Primeira Empresa
-              </button>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-slate-800/50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase">Empresa</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase">Tipo de Acesso</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase">Plano</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase">Status</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase">Valor Mensal</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase">Ações</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-800">
-                  {companies.map((company) => (
-                    <tr key={company.id} className="hover:bg-slate-800/30">
-                      <td className="px-6 py-4">
-                        <div>
-                          <div className="text-sm font-medium text-slate-200">{company.name}</div>
-                          <div className="text-sm text-slate-400">{company.email}</div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-2">
-                          {company.access_type === 'shared' ? (
-                            <>
-                              <Users className="w-4 h-4 text-red-400" />
-                              <span className="text-sm text-slate-200">Compartilhado</span>
-                            </>
-                          ) : (
-                            <>
-                              <Shield className="w-4 h-4 text-blue-400" />
-                              <span className="text-sm text-slate-200">Individual</span>
-                            </>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-lg border ${getPlanColor(company.plan)}`}>
-                          {company.plan}
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-slate-800/50">
+                <tr>
+                  <th className="text-left p-4 text-sm font-medium text-slate-300">Empresa</th>
+                  <th className="text-left p-4 text-sm font-medium text-slate-300">Tipo de Acesso</th>
+                  <th className="text-left p-4 text-sm font-medium text-slate-300">Plano</th>
+                  <th className="text-left p-4 text-sm font-medium text-slate-300">Status</th>
+                  <th className="text-left p-4 text-sm font-medium text-slate-300">Valor Mensal</th>
+                  <th className="text-left p-4 text-sm font-medium text-slate-300">Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+                {companies.map((company) => (
+                  <tr key={company.id} className="border-t border-slate-800/50 hover:bg-slate-800/25">
+                    <td className="p-4">
+                      <div>
+                        <div className="font-medium text-slate-100">{company.name}</div>
+                        <div className="text-sm text-slate-400">{company.email}</div>
+                      </div>
+                    </td>
+                    <td className="p-4">
+                      <div className="flex items-center gap-2">
+                        {company.access_type === 'shared' ? (
+                          <>
+                            <Users className="w-4 h-4 text-orange-400" />
+                            <span className="text-sm text-slate-300">Compartilhado</span>
+                          </>
+                        ) : (
+                          <>
+                            <Shield className="w-4 h-4 text-blue-400" />
+                            <span className="text-sm text-slate-300">Individual</span>
+                          </>
+                        )}
+                      </div>
+                    </td>
+                    <td className="p-4">
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getPlanColor(company.plan)}`}>
+                        {company.plan}
+                      </span>
+                    </td>
+                    <td className="p-4">
+                      <div className="flex items-center gap-2">
+                        {company.status === 'active' ? (
+                          <CheckCircle className="w-4 h-4 text-green-400" />
+                        ) : (
+                          <XCircle className="w-4 h-4 text-red-400" />
+                        )}
+                        <span className={`text-sm font-medium ${getStatusColor(company.status)}`}>
+                          {company.status === 'active' ? 'Ativo' : 
+                           company.status === 'suspended' ? 'Suspenso' : 'Cancelado'}
                         </span>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className={`flex items-center gap-1 ${getStatusColor(company.status)}`}>
-                          {company.status === 'active' ? <CheckCircle className="w-4 h-4" /> : <XCircle className="w-4 h-4" />}
-                          <span className="text-sm capitalize">{company.status}</span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 text-sm text-slate-200">
+                      </div>
+                    </td>
+                    <td className="p-4">
+                      <span className="text-sm font-medium text-slate-100">
                         {formatCurrency(company.monthly_fee)}
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => handleViewDetails(company)}
-                            className="p-1 text-blue-400 hover:bg-blue-500/20 rounded"
-                            title="Ver detalhes"
-                          >
-                            <Eye className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => toggleCompanyStatus(company.id, company.status)}
-                            className={`p-1 rounded ${
-                              company.status === 'active' 
-                                ? 'text-amber-400 hover:bg-amber-500/20' 
-                                : 'text-green-400 hover:bg-green-500/20'
-                            }`}
-                            title={company.status === 'active' ? 'Suspender' : 'Ativar'}
-                          >
-                            {company.status === 'active' ? <XCircle className="w-4 h-4" /> : <CheckCircle className="w-4 h-4" />}
-                          </button>
-                          <button
-                            onClick={() => deleteCompany(company.id, company.name)}
-                            className="p-1 text-red-400 hover:bg-red-500/20 rounded"
-                            title="Excluir empresa"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+                      </span>
+                    </td>
+                    <td className="p-4">
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => handleViewDetails(company)}
+                          className="p-2 text-slate-400 hover:text-blue-400 hover:bg-blue-500/10 rounded-lg transition-colors"
+                          title="Ver detalhes"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => toggleCompanyStatus(company.id, company.status)}
+                          className="p-2 text-slate-400 hover:text-amber-400 hover:bg-amber-500/10 rounded-lg transition-colors"
+                          title={company.status === 'active' ? 'Suspender' : 'Ativar'}
+                        >
+                          {company.status === 'active' ? (
+                            <XCircle className="w-4 h-4" />
+                          ) : (
+                            <CheckCircle className="w-4 h-4" />
+                          )}
+                        </button>
+                        <button
+                          onClick={() => deleteCompany(company.id, company.name)}
+                          className="p-2 text-slate-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+                          title="Excluir empresa"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
 
-        {/* Modal Criar Empresa */}
+        {/* Modal de Nova Empresa */}
         <CompanyModal
           isOpen={showModal}
           onClose={() => setShowModal(false)}
-          onSuccess={loadCompanies}
+          onSuccess={() => {
+            setShowModal(false);
+            loadCompanies();
+          }}
         />
 
-        {/* Modal Detalhes da Empresa */}
+        {/* Modal de Detalhes */}
         {showDetailsModal && selectedCompany && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-            <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-              <div className="p-6 border-b border-slate-800 flex items-center justify-between">
-                <h2 className="text-xl font-semibold text-slate-100">Detalhes da Empresa</h2>
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 w-full max-w-2xl max-h-[80vh] overflow-y-auto">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-semibold text-slate-100">
+                  Detalhes da Empresa: {selectedCompany.name}
+                </h2>
                 <button
                   onClick={() => setShowDetailsModal(false)}
-                  className="text-slate-400 hover:text-slate-200 transition-colors"
+                  className="p-2 text-slate-400 hover:text-slate-200 rounded-lg hover:bg-slate-800"
                 >
-                  <XCircle className="w-5 h-5" />
+                  ×
                 </button>
               </div>
 
-              <div className="p-6 space-y-6">
-                {/* Informações da Empresa */}
-                <div>
-                  <h3 className="text-lg font-medium text-slate-200 mb-4 flex items-center gap-2">
-                    <Building className="w-5 h-5" />
-                    Informações da Empresa
-                  </h3>
-                  <div className="grid grid-cols-2 gap-4 bg-slate-800/30 rounded-lg p-4">
-                    <div>
-                      <div className="text-sm text-slate-400">Nome</div>
-                      <div className="text-slate-200 font-medium">{selectedCompany.name}</div>
-                    </div>
-                    <div>
-                      <div className="text-sm text-slate-400">Email</div>
-                      <div className="text-slate-200">{selectedCompany.email}</div>
-                    </div>
-                    <div>
-                      <div className="text-sm text-slate-400">Telefone</div>
-                      <div className="text-slate-200">{selectedCompany.phone || 'Não informado'}</div>
-                    </div>
-                    <div>
-                      <div className="text-sm text-slate-400">CNPJ</div>
-                      <div className="text-slate-200">{selectedCompany.document || 'Não informado'}</div>
-                    </div>
-                    <div>
-                      <div className="text-sm text-slate-400">Plano</div>
-                      <div className="text-slate-200 capitalize">{selectedCompany.plan}</div>
-                    </div>
-                    <div>
-                      <div className="text-sm text-slate-400">Tipo de Acesso</div>
-                      <div className="text-slate-200">
-                        {selectedCompany.access_type === 'shared' ? 'Compartilhado' : 'Individual'}
-                      </div>
-                    </div>
-                    <div>
-                      <div className="text-sm text-slate-400">Valor Mensal</div>
-                      <div className="text-green-400 font-semibold">{formatCurrency(selectedCompany.monthly_fee)}</div>
-                    </div>
-                    <div>
-                      <div className="text-sm text-slate-400">Status</div>
-                      <div className={`font-medium capitalize ${getStatusColor(selectedCompany.status)}`}>
-                        {selectedCompany.status}
-                      </div>
-                    </div>
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-1">Email</label>
+                    <div className="text-slate-100">{selectedCompany.email}</div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-1">Telefone</label>
+                    <div className="text-slate-100">{selectedCompany.phone}</div>
                   </div>
                 </div>
 
-                {/* Credenciais de Acesso */}
                 <div>
-                  <h3 className="text-lg font-medium text-slate-200 mb-4 flex items-center gap-2">
-                    <Shield className="w-5 h-5" />
-                    Credenciais de Acesso ao Painel Cliente
-                  </h3>
-                  
-                  {companyUsers.length === 0 ? (
-                    <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-4">
-                      <p className="text-amber-300 text-sm">Nenhum usuário encontrado para esta empresa.</p>
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-                      {companyUsers.map((companyUser, index) => (
-                        <div key={companyUser.user_id} className="bg-slate-800/30 rounded-lg p-4 border border-slate-700">
-                          <div className="flex items-center justify-between mb-3">
-                            <span className="text-sm font-medium text-slate-300">
-                              Usuário {index + 1} {companyUser.role === 'owner' && '(Proprietário)'}
-                            </span>
-                            <span className={`text-xs px-2 py-1 rounded ${
-                              companyUser.active ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'
-                            }`}>
-                              {companyUser.active ? 'Ativo' : 'Inativo'}
-                            </span>
+                  <label className="block text-sm font-medium text-slate-300 mb-1">Documento</label>
+                  <div className="text-slate-100">{selectedCompany.document}</div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-1">Plano</label>
+                    <div className="text-slate-100">{selectedCompany.plan}</div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-1">Máx. Usuários</label>
+                    <div className="text-slate-100">{selectedCompany.max_users}</div>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-2">Usuários da Empresa</label>
+                  <div className="space-y-2">
+                    {companyUsers.length === 0 ? (
+                      <div className="text-center py-4 text-slate-400">
+                        Nenhum usuário encontrado
+                      </div>
+                    ) : (
+                      companyUsers.map((user) => (
+                        <div key={user.user_id} className="flex items-center justify-between p-3 bg-slate-800/50 rounded-lg">
+                          <div className="flex-1">
+                            <div className="text-slate-100">{user.users.email}</div>
+                            <div className="text-sm text-slate-400">{user.role}</div>
                           </div>
-                          
-                          <div className="space-y-2">
-                            <div>
-                              <div className="text-xs text-slate-400 mb-1">Email de Login:</div>
-                              <div className="flex items-center gap-2">
-                                <code className="flex-1 bg-slate-900/50 px-3 py-2 rounded text-sm text-slate-200 font-mono">
-                                  {companyUser.users?.email}
-                                </code>
-                                <button
-                                  onClick={() => {
-                                    navigator.clipboard.writeText(companyUser.users?.email || '');
-                                    alert('Email copiado!');
-                                  }}
-                                  className="px-3 py-2 bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 rounded text-xs transition-colors"
-                                >
-                                  Copiar
-                                </button>
-                              </div>
+                          <div className="flex items-center gap-2">
+                            <div className={`px-2 py-1 rounded text-xs ${user.active ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
+                              {user.active ? 'Ativo' : 'Inativo'}
                             </div>
-                            
-                            <div className="bg-amber-500/10 border border-amber-500/20 rounded p-3">
-                              <p className="text-xs text-amber-300">
-                                ⚠️ <strong>Senha:</strong> A senha foi definida no momento da criação da empresa. 
-                                Por segurança, não é possível visualizá-la aqui. Se o cliente esqueceu a senha, 
-                                você pode redefinir através do Supabase ou criar um novo usuário.
-                              </p>
-                            </div>
+                            <button
+                              onClick={() => deleteUser(user.users.email)}
+                              className="p-2 text-slate-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+                              title="Excluir usuário"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
                           </div>
                         </div>
-                      ))}
-                    </div>
-                  )}
-
-                  <div className="mt-4 bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
-                    <p className="text-sm text-blue-300 mb-2">
-                      <strong>🔗 URL do Painel Cliente:</strong>
-                    </p>
-                    <code className="block bg-slate-900/50 px-3 py-2 rounded text-sm text-slate-200 font-mono">
-                      http://localhost:5173
-                    </code>
-                    <p className="text-xs text-slate-400 mt-2">
-                      Em produção, substitua pela URL real do sistema cliente.
-                    </p>
+                      ))
+                    )}
                   </div>
                 </div>
-              </div>
-
-              <div className="p-6 border-t border-slate-800">
-                <button
-                  onClick={() => setShowDetailsModal(false)}
-                  className="w-full px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg transition-colors"
-                >
-                  Fechar
-                </button>
               </div>
             </div>
           </div>

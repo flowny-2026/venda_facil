@@ -79,48 +79,87 @@ export default function Vendedores() {
     try {
       setLoadingStats(true);
       
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
+      // Usar UTC para evitar problemas de timezone
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
       
-      const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+      const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      const firstDayOfNextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+      
+      console.log('📊 Calculando estatísticas:');
+      console.log('   - Hoje:', today.toISOString());
+      console.log('   - Amanhã:', tomorrow.toISOString());
+      console.log('   - Primeiro dia do mês:', firstDayOfMonth.toISOString());
       
       // Buscar vendas do dia e do mês para cada vendedor
       const statsPromises = sellers.map(async (seller) => {
-        // Vendas do dia
+        console.log(`🔍 Buscando vendas para ${seller.name} (${seller.id})`);
+        
+        // Vendas do dia (usando range de datas)
         const { data: todaySales, error: todayError } = await supabase
           .from('sales')
-          .select('total_amount, items_count')
+          .select('id, total_amount')
           .eq('seller_id', seller.id)
-          .gte('created_at', today.toISOString());
+          .gte('created_at', today.toISOString())
+          .lt('created_at', tomorrow.toISOString());
 
-        // Vendas do mês
+        if (todayError) {
+          console.error(`❌ Erro ao buscar vendas de hoje para ${seller.name}:`, todayError);
+        } else {
+          console.log(`📈 ${seller.name} - Vendas hoje:`, todaySales?.length || 0);
+        }
+
+        // Vendas do mês (usando range de datas)
         const { data: monthSales, error: monthError } = await supabase
           .from('sales')
-          .select('total_amount, items_count')
+          .select('id, total_amount')
           .eq('seller_id', seller.id)
-          .gte('created_at', firstDayOfMonth.toISOString());
+          .gte('created_at', firstDayOfMonth.toISOString())
+          .lt('created_at', firstDayOfNextMonth.toISOString());
+
+        if (monthError) {
+          console.error(`❌ Erro ao buscar vendas do mês para ${seller.name}:`, monthError);
+        } else {
+          console.log(`📈 ${seller.name} - Vendas do mês:`, monthSales?.length || 0);
+        }
+
+        // Buscar itens das vendas (aproximação - cada venda = 1 item se não tiver sale_items)
+        const { data: todayItems } = await supabase
+          .from('sale_items')
+          .select('quantity')
+          .in('sale_id', todaySales?.map(s => s.id) || []);
+
+        const { data: monthItems } = await supabase
+          .from('sale_items')
+          .select('quantity')
+          .in('sale_id', monthSales?.map(s => s.id) || []);
 
         const todayCount = todaySales?.length || 0;
-        const todayItems = todaySales?.reduce((sum, sale) => sum + (sale.items_count || 1), 0) || 0;
+        const todayItemsCount = todayItems?.reduce((sum, item) => sum + (item.quantity || 1), 0) || todayCount;
         const todayTotal = todaySales?.reduce((sum, sale) => sum + (sale.total_amount || 0), 0) || 0;
         const todayAvg = todayCount > 0 ? todayTotal / todayCount : 0;
 
         const monthCount = monthSales?.length || 0;
-        const monthItems = monthSales?.reduce((sum, sale) => sum + (sale.items_count || 1), 0) || 0;
+        const monthItemsCount = monthItems?.reduce((sum, item) => sum + (item.quantity || 1), 0) || monthCount;
         const monthTotal = monthSales?.reduce((sum, sale) => sum + (sale.total_amount || 0), 0) || 0;
         const monthAvg = monthCount > 0 ? monthTotal / monthCount : 0;
 
-        return {
+        const stats = {
           sellerId: seller.id,
           sellerName: seller.name,
           todaySales: todayCount,
-          todayItemsCount: todayItems,
+          todayItemsCount: todayItemsCount,
           todayTicketAvg: todayAvg,
           monthSales: monthCount,
-          monthItemsCount: monthItems,
+          monthItemsCount: monthItemsCount,
           monthTicketAvg: monthAvg,
           commission: seller.commission_percentage
         };
+
+        console.log(`✅ Estatísticas para ${seller.name}:`, stats);
+        return stats;
       });
 
       const stats = await Promise.all(statsPromises);
@@ -318,21 +357,110 @@ export default function Vendedores() {
   };
 
   const deleteSeller = async (sellerId: string) => {
-    if (!confirm('Tem certeza que deseja excluir este vendedor?')) return;
+    const seller = sellers.find(s => s.id === sellerId);
+    if (!seller) return;
+
+    const confirmMessage = `⚠️ ATENÇÃO: Excluir vendedor "${seller.name}"?\n\n` +
+      `Esta ação irá:\n` +
+      `• Remover o vendedor do sistema\n` +
+      `• Remover o login (se existir)\n` +
+      `• Manter as vendas registradas (para histórico)\n` +
+      `• NÃO PODE SER DESFEITA\n\n` +
+      `Tem certeza que deseja continuar?`;
+
+    if (!confirm(confirmMessage)) return;
     
     try {
+      console.log('========================================');
+      console.log('🗑️ INICIANDO EXCLUSÃO DE VENDEDOR');
+      console.log('========================================');
+      console.log(`👤 Vendedor: ${seller.name}`);
+      console.log(`🆔 ID: ${sellerId}`);
+      console.log(`🔑 Tem login: ${seller.has_login ? 'Sim' : 'Não'}`);
+
+      // PASSO 1: Se o vendedor tem login, buscar o user_id e deletar o usuário
+      if (seller.has_login) {
+        console.log('🔍 Buscando user_id do vendedor...');
+        
+        const { data: companyUserData, error: companyUserError } = await supabase
+          .from('company_users')
+          .select('user_id')
+          .eq('seller_id', sellerId)
+          .maybeSingle();
+
+        if (companyUserData && companyUserData.user_id) {
+          const userId = companyUserData.user_id;
+          console.log(`✅ User ID encontrado: ${userId}`);
+
+          // Desvincular vendas
+          console.log('🔄 Desvinculando vendas...');
+          await supabase
+            .from('sales')
+            .update({ user_id: null })
+            .eq('user_id', userId);
+          console.log('✅ Vendas desvinculadas');
+
+          // Deletar vinculação em company_users
+          console.log('🔄 Removendo vinculação...');
+          await supabase
+            .from('company_users')
+            .delete()
+            .eq('user_id', userId);
+          console.log('✅ Vinculação removida');
+
+          // Deletar usuário do auth.users usando função especial
+          console.log('🔄 Deletando usuário do auth.users...');
+          const { error: deleteUserError } = await supabase.rpc(
+            'delete_auth_user',
+            { target_user_id: userId }
+          );
+
+          if (deleteUserError) {
+            console.warn('⚠️ Não foi possível deletar do auth.users:', deleteUserError);
+            console.log('ℹ️ Continuando com exclusão do vendedor...');
+          } else {
+            console.log('✅ Usuário deletado do auth.users');
+          }
+        }
+      }
+
+      // PASSO 2: Desvincular vendas do vendedor (manter para histórico)
+      console.log('🔄 Desvinculando vendas do vendedor...');
+      await supabase
+        .from('sales')
+        .update({ seller_id: null })
+        .eq('seller_id', sellerId);
+      console.log('✅ Vendas desvinculadas');
+
+      // PASSO 3: Deletar o vendedor da tabela sellers
+      console.log('🔄 Deletando vendedor da tabela sellers...');
       const { error } = await supabase
         .from('sellers')
         .delete()
         .eq('id', sellerId);
 
       if (error) throw error;
+      console.log('✅ Vendedor deletado');
 
-      setSellers(prev => prev.filter(seller => seller.id !== sellerId));
-      alert('Vendedor excluído com sucesso!');
+      // PASSO 4: Atualizar estado local
+      setSellers(prev => prev.filter(s => s.id !== sellerId));
+
+      console.log('========================================');
+      console.log('✅ EXCLUSÃO CONCLUÍDA COM SUCESSO');
+      console.log('========================================');
+
+      alert(`✅ Vendedor "${seller.name}" excluído com sucesso!`);
     } catch (error: any) {
-      console.error('Erro ao excluir vendedor:', error);
-      alert('Erro ao excluir vendedor: ' + error.message);
+      console.error('========================================');
+      console.error('❌ ERRO NA EXCLUSÃO');
+      console.error('========================================');
+      console.error('📋 Erro:', error);
+      console.error('📋 Mensagem:', error.message);
+      
+      alert(`❌ Erro ao excluir vendedor:\n\n${error.message}\n\nVerifique o console (F12) para mais detalhes.`);
+      
+      // Recarregar lista para garantir consistência
+      loadSellers();
     }
   };
 
