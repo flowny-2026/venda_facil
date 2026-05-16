@@ -22,6 +22,52 @@ function openContactModal() {
     console.log('✅ Modal aberto com sucesso!');
 }
 
+// Menu mobile
+function openMobileMenu() {
+    const mobileNav = document.getElementById('mobileNav');
+    const overlay = document.getElementById('mobileNavOverlay');
+    const menuBtn = document.getElementById('mobileMenuBtn');
+
+    if (!mobileNav || !overlay) return;
+
+    mobileNav.classList.add('open');
+    overlay.classList.add('open');
+    document.body.classList.add('menu-open');
+    mobileNav.setAttribute('aria-hidden', 'false');
+    overlay.setAttribute('aria-hidden', 'false');
+    if (menuBtn) {
+        menuBtn.setAttribute('aria-expanded', 'true');
+        menuBtn.textContent = '✕';
+    }
+}
+
+function closeMobileMenu() {
+    const mobileNav = document.getElementById('mobileNav');
+    const overlay = document.getElementById('mobileNavOverlay');
+    const menuBtn = document.getElementById('mobileMenuBtn');
+
+    if (!mobileNav || !overlay) return;
+
+    mobileNav.classList.remove('open');
+    overlay.classList.remove('open');
+    document.body.classList.remove('menu-open');
+    mobileNav.setAttribute('aria-hidden', 'true');
+    overlay.setAttribute('aria-hidden', 'true');
+    if (menuBtn) {
+        menuBtn.setAttribute('aria-expanded', 'false');
+        menuBtn.textContent = '☰';
+    }
+}
+
+function toggleMobileMenu() {
+    const mobileNav = document.getElementById('mobileNav');
+    if (mobileNav?.classList.contains('open')) {
+        closeMobileMenu();
+    } else {
+        openMobileMenu();
+    }
+}
+
 // Fechar modal
 function closeModal() {
     const modal = document.getElementById('contactModal');
@@ -122,6 +168,21 @@ document.addEventListener('DOMContentLoaded', function() {
         console.error('❌ Botão "Começar Agora" não encontrado!');
     }
     
+    // Menu hambúrguer
+    const menuBtn = document.getElementById('mobileMenuBtn');
+    const closeBtn = document.getElementById('mobileNavClose');
+    const overlay = document.getElementById('mobileNavOverlay');
+
+    menuBtn?.addEventListener('click', toggleMobileMenu);
+    closeBtn?.addEventListener('click', closeMobileMenu);
+    overlay?.addEventListener('click', closeMobileMenu);
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            closeMobileMenu();
+        }
+    });
+
     // Smooth scroll para links âncora
     document.querySelectorAll('a[href^="#"]').forEach(anchor => {
         anchor.addEventListener('click', function (e) {
@@ -136,6 +197,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const target = document.querySelector(href);
             if (target) {
                 e.preventDefault();
+                closeMobileMenu();
                 target.scrollIntoView({ behavior: 'smooth', block: 'start' });
             }
         });
