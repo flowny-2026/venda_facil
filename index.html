@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VendaFácil - Sistema PDV Completo para Seu Negócio</title>
-    <meta name="description" content="Transforme suas vendas com o sistema PDV mais fácil e completo do mercado. Gestão de estoque, vendedores e relatórios em tempo real.">
+    <title>VendaF?cil - Sistema PDV Completo para Seu Neg?cio</title>
+    <meta name="description" content="Transforme suas vendas com o sistema PDV mais f?cil e completo do mercado. Gest?o de estoque, vendedores e relat?rios em tempo real.">
     
     <!-- Favicon -->
     <link rel="icon" type="image/png" href="assets/logo-vendafacil.png">
@@ -12,15 +12,15 @@
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://flowny-2026.github.io/venda_facil/">
-    <meta property="og:title" content="VendaFácil - Sistema PDV Completo">
-    <meta property="og:description" content="Transforme suas vendas com o sistema PDV mais fácil e completo do mercado.">
+    <meta property="og:title" content="VendaF?cil - Sistema PDV Completo">
+    <meta property="og:description" content="Transforme suas vendas com o sistema PDV mais f?cil e completo do mercado.">
     <meta property="og:image" content="https://flowny-2026.github.io/venda_facil/assets/logo-vendafacil.png">
     
     <!-- Twitter -->
     <meta property="twitter:card" content="summary_large_image">
     <meta property="twitter:url" content="https://flowny-2026.github.io/venda_facil/">
-    <meta property="twitter:title" content="VendaFácil - Sistema PDV Completo">
-    <meta property="twitter:description" content="Transforme suas vendas com o sistema PDV mais fácil e completo do mercado.">
+    <meta property="twitter:title" content="VendaF?cil - Sistema PDV Completo">
+    <meta property="twitter:description" content="Transforme suas vendas com o sistema PDV mais f?cil e completo do mercado.">
     <meta property="twitter:image" content="https://flowny-2026.github.io/venda_facil/assets/logo-vendafacil.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -33,7 +33,7 @@
         }
         
         :root {
-            /* Cores dos Painéis - Consistência Visual */
+            /* Cores dos Pain?is - Consist?ncia Visual */
             --bg-primary: #020617;        /* slate-950 */
             --bg-secondary: #0f172a;      /* slate-900 */
             --bg-card: rgba(15, 23, 42, 0.5);  /* slate-900/50 */
@@ -112,9 +112,9 @@
             filter: drop-shadow(0 4px 12px rgba(59, 130, 246, 0.5));
         }
         
-        @media (max-width: 768px) {
+        @media (max-width: 1024px), (max-height: 520px) {
             .logo-img {
-                height: 56px;
+                height: 48px;
             }
         }
         
@@ -753,7 +753,7 @@
             background: rgba(148, 163, 184, 0.1);
         }
 
-                .mobile-nav-links {
+        .mobile-nav-links {
             list-style: none;
             display: flex;
             flex-direction: column;
@@ -778,7 +778,7 @@
             background: rgba(59, 130, 246, 0.1);
         }
 
-                .mobile-nav-cta {
+        .mobile-nav-cta {
             display: block;
             margin-top: 1rem;
             padding: 1rem 1.5rem !important;
@@ -1010,10 +1010,10 @@
             color: var(--text-primary);
         }
         
-        /* Responsive */
-        @media (max-width: 768px) {
+        /* Header mobile: retrato, paisagem e tablets estreitos */
+        @media (max-width: 1024px), (max-height: 520px) {
             nav {
-                padding: 0.75rem 1rem;
+                padding: 0.5rem 1rem;
             }
 
             .nav-links {
@@ -1023,12 +1023,46 @@
             .header-cta {
                 display: none !important;
             }
-            
+
             .mobile-menu-btn {
                 display: flex;
                 flex-shrink: 0;
             }
-            
+        }
+
+        /* Celular deitado (paisagem): hero mais compacto */
+        @media (orientation: landscape) and (max-height: 520px) {
+            .hero {
+                padding: 72px 1.25rem 28px;
+            }
+
+            .hero h1 {
+                font-size: 1.65rem;
+                margin-bottom: 0.5rem;
+            }
+
+            .hero p {
+                font-size: 0.85rem;
+                margin-bottom: 1rem;
+                line-height: 1.4;
+            }
+
+            .hero-buttons {
+                flex-direction: row;
+                flex-wrap: wrap;
+                gap: 0.75rem;
+            }
+
+            .btn-primary,
+            .btn-secondary {
+                width: auto;
+                padding: 0.6rem 1.1rem;
+                font-size: 0.85rem;
+            }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
             .hero {
                 padding: 100px 1.5rem 60px;
             }
@@ -1067,7 +1101,7 @@
             animation: fadeInUp 0.6s ease-out;
         }
 
-        /* Botão Flutuante WhatsApp */
+        /* Bot?o Flutuante WhatsApp */
         .whatsapp-float {
             position: fixed;
             bottom: 20px;
@@ -1174,16 +1208,16 @@
     <header>
         <nav>
             <div class="logo">
-                <img src="assets/logo-vendafacil.png" alt="VendaFácil" class="logo-img">
+                <img src="assets/logo-vendafacil.png" alt="VendaF?cil" class="logo-img">
             </div>
             <ul class="nav-links">
-                <li><a href="#beneficios">Benefícios</a></li>
+                <li><a href="#beneficios">Benef?cios</a></li>
                 <li><a href="#como-funciona">Como Funciona</a></li>
                 <li><a href="#produto">Produto</a></li>
                 <li><a href="#depoimentos">Depoimentos</a></li>
             </ul>
-            <a href="#" onclick="openContactModal(); return false;" class="cta-button header-cta">Começar Agora</a>
-            <button type="button" class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Abrir menu" aria-expanded="false" aria-controls="mobileNav">☰</button>
+            <a href="#" onclick="openContactModal(); return false;" class="cta-button header-cta">Come?ar Agora</a>
+            <button type="button" class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Abrir menu" aria-expanded="false" aria-controls="mobileNav">?</button>
         </nav>
     </header>
 
@@ -1194,12 +1228,12 @@
                 <button type="button" class="mobile-nav-close" id="mobileNavClose" aria-label="Fechar menu">&times;</button>
             </div>
             <ul class="mobile-nav-links">
-                <li><a href="#beneficios">Benefícios</a></li>
+                <li><a href="#beneficios">Benef?cios</a></li>
                 <li><a href="#como-funciona">Como Funciona</a></li>
                 <li><a href="#produto">Produto</a></li>
                 <li><a href="#depoimentos">Depoimentos</a></li>
                 <li>
-                    <a href="#" onclick="openContactModal(); closeMobileMenu(); return false;" class="cta-button mobile-nav-cta">Começar Agora</a>
+                    <a href="#" onclick="openContactModal(); closeMobileMenu(); return false;" class="cta-button mobile-nav-cta">Come?ar Agora</a>
                 </li>
             </ul>
     </nav>
@@ -1207,10 +1241,10 @@
     <!-- Hero Section -->
     <section class="hero">
         <div class="hero-content fade-in-up">
-            <h1>Venda Mais, Venda Fácil</h1>
-            <p>O sistema PDV completo que transforma a gestão do seu negócio. Controle vendas, estoque e equipe em um só lugar.</p>
+            <h1>Venda Mais, Venda F?cil</h1>
+            <p>O sistema PDV completo que transforma a gest?o do seu neg?cio. Controle vendas, estoque e equipe em um s? lugar.</p>
             <div class="hero-buttons">
-                <a href="#" onclick="openContactModal(); return false;" class="btn-primary">Começar Gratuitamente</a>
+                <a href="#" onclick="openContactModal(); return false;" class="btn-primary">Come?ar Gratuitamente</a>
                 <a href="#como-funciona" class="btn-secondary">Ver Como Funciona</a>
             </div>
         </div>
@@ -1220,39 +1254,39 @@
     <section id="beneficios" class="benefits">
         <div class="container">
             <div class="section-title">
-                <h2>Por que escolher o VendaFácil?</h2>
-                <p>Tudo que você precisa para vender mais e melhor</p>
+                <h2>Por que escolher o VendaF?cil?</h2>
+                <p>Tudo que voc? precisa para vender mais e melhor</p>
             </div>
             <div class="benefits-grid">
                 <div class="benefit-card">
-                    <div class="benefit-icon">⚡</div>
-                    <h3>Rápido e Intuitivo</h3>
-                    <p>Interface simples que qualquer pessoa aprende em minutos. Sem complicação, sem treinamento extenso.</p>
+                    <div class="benefit-icon">?</div>
+                    <h3>R?pido e Intuitivo</h3>
+                    <p>Interface simples que qualquer pessoa aprende em minutos. Sem complica??o, sem treinamento extenso.</p>
                 </div>
                 <div class="benefit-card">
-                    <div class="benefit-icon">📊</div>
-                    <h3>Relatórios em Tempo Real</h3>
+                    <div class="benefit-icon">??</div>
+                    <h3>Relat?rios em Tempo Real</h3>
                     <p>Acompanhe suas vendas, estoque e desempenho da equipe com dashboards atualizados instantaneamente.</p>
                 </div>
                 <div class="benefit-card">
-                    <div class="benefit-icon">🔒</div>
-                    <h3>Seguro e Confiável</h3>
-                    <p>Seus dados protegidos com criptografia de ponta. Backup automático e disponibilidade 24/7.</p>
+                    <div class="benefit-icon">??</div>
+                    <h3>Seguro e Confi?vel</h3>
+                    <p>Seus dados protegidos com criptografia de ponta. Backup autom?tico e disponibilidade 24/7.</p>
                 </div>
                 <div class="benefit-card">
-                    <div class="benefit-icon">🌐</div>
+                    <div class="benefit-icon">??</div>
                     <h3>Funciona em Qualquer Lugar</h3>
                     <p>Acesse de qualquer dispositivo: computador, tablet ou celular. Venda onde estiver.</p>
                 </div>
                 <div class="benefit-card">
-                    <div class="benefit-icon">📈</div>
+                    <div class="benefit-icon">??</div>
                     <h3>Aumente suas Vendas</h3>
-                    <p>Controle de estoque inteligente, alertas automáticos e análises que ajudam você a vender mais.</p>
+                    <p>Controle de estoque inteligente, alertas autom?ticos e an?lises que ajudam voc? a vender mais.</p>
                 </div>
                 <div class="benefit-card">
-                    <div class="benefit-icon">💬</div>
+                    <div class="benefit-icon">??</div>
                     <h3>Suporte Dedicado</h3>
-                    <p>Equipe pronta para ajudar você a crescer. Suporte rápido e eficiente quando precisar.</p>
+                    <p>Equipe pronta para ajudar voc? a crescer. Suporte r?pido e eficiente quando precisar.</p>
                 </div>
             </div>
         </div>
@@ -1268,18 +1302,18 @@
             <div class="steps">
                 <div class="step">
                     <div class="step-number">1</div>
-                    <h3>Cadastre-se Grátis</h3>
-                    <p>Crie sua conta em menos de 2 minutos. Sem cartão de crédito, sem compromisso.</p>
+                    <h3>Cadastre-se Gr?tis</h3>
+                    <p>Crie sua conta em menos de 2 minutos. Sem cart?o de cr?dito, sem compromisso.</p>
                 </div>
                 <div class="step">
                     <div class="step-number">2</div>
                     <h3>Configure seu Sistema</h3>
-                    <p>Adicione seus produtos, vendedores e formas de pagamento de forma rápida e fácil.</p>
+                    <p>Adicione seus produtos, vendedores e formas de pagamento de forma r?pida e f?cil.</p>
                 </div>
                 <div class="step">
                     <div class="step-number">3</div>
                     <h3>Comece a Vender</h3>
-                    <p>Pronto! Seu PDV está funcionando. Faça vendas, controle estoque e acompanhe resultados.</p>
+                    <p>Pronto! Seu PDV est? funcionando. Fa?a vendas, controle estoque e acompanhe resultados.</p>
                 </div>
             </div>
         </div>
@@ -1290,41 +1324,41 @@
         <div class="container">
             <div class="section-title">
                 <h2>Sistema Completo de Vendas</h2>
-                <p>Todas as ferramentas que você precisa em um só lugar</p>
+                <p>Todas as ferramentas que voc? precisa em um s? lugar</p>
             </div>
             <div class="showcase-content">
                 <div class="showcase-image">
                     <!-- Quando adicionar o mockup, descomente a linha abaixo e remova o emoji -->
-                    <!-- <img src="assets/images/dashboard-screenshot.png" alt="Dashboard VendaFácil"> -->
-                    📊💻📱
+                    <!-- <img src="assets/images/dashboard-screenshot.png" alt="Dashboard VendaF?cil"> -->
+                    ??????
                 </div>
                 <div class="showcase-features">
                     <div class="feature-item">
-                        <div class="feature-icon">🛒</div>
+                        <div class="feature-icon">??</div>
                         <div>
                             <h4>PDV Completo</h4>
-                            <p>Carrinho intuitivo, descontos, múltiplas formas de pagamento e cálculo automático de troco.</p>
+                            <p>Carrinho intuitivo, descontos, m?ltiplas formas de pagamento e c?lculo autom?tico de troco.</p>
                         </div>
                     </div>
                     <div class="feature-item">
-                        <div class="feature-icon">📦</div>
+                        <div class="feature-icon">??</div>
                         <div>
-                            <h4>Gestão de Estoque</h4>
-                            <p>Controle automático de estoque, alertas de produtos em falta e categorização inteligente.</p>
+                            <h4>Gest?o de Estoque</h4>
+                            <p>Controle autom?tico de estoque, alertas de produtos em falta e categoriza??o inteligente.</p>
                         </div>
                     </div>
                     <div class="feature-item">
-                        <div class="feature-icon">👥</div>
+                        <div class="feature-icon">??</div>
                         <div>
                             <h4>Controle de Vendedores</h4>
-                            <p>Acompanhe o desempenho de cada vendedor com relatórios detalhados e comissões automáticas.</p>
+                            <p>Acompanhe o desempenho de cada vendedor com relat?rios detalhados e comiss?es autom?ticas.</p>
                         </div>
                     </div>
                     <div class="feature-item">
-                        <div class="feature-icon">📊</div>
+                        <div class="feature-icon">??</div>
                         <div>
-                            <h4>Relatórios Avançados</h4>
-                            <p>Dashboard completo com KPIs, gráficos e análises para tomar decisões inteligentes.</p>
+                            <h4>Relat?rios Avan?ados</h4>
+                            <p>Dashboard completo com KPIs, gr?ficos e an?lises para tomar decis?es inteligentes.</p>
                         </div>
                     </div>
                 </div>
@@ -1337,7 +1371,7 @@
         <div class="container">
             <div class="section-title">
                 <h2>Empresas que Confiam</h2>
-                <p>Mais de 1.000 negócios já vendem com o VendaFácil</p>
+                <p>Mais de 1.000 neg?cios j? vendem com o VendaF?cil</p>
             </div>
             <div class="stats">
                 <div class="stat-card">
@@ -1353,25 +1387,25 @@
                     <div class="stat-label">Uptime</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-number">4.9⭐</div>
-                    <div class="stat-label">Avaliação Média</div>
+                    <div class="stat-number">4.9?</div>
+                    <div class="stat-label">Avalia??o M?dia</div>
                 </div>
             </div>
             <div class="testimonials">
                 <div class="testimonial-card">
-                    <p class="testimonial-text">"O VendaFácil transformou nossa loja. Aumentamos as vendas em 40% no primeiro mês e o controle de estoque ficou muito mais fácil."</p>
+                    <p class="testimonial-text">"O VendaF?cil transformou nossa loja. Aumentamos as vendas em 40% no primeiro m?s e o controle de estoque ficou muito mais f?cil."</p>
                     <div class="testimonial-author">Maria Silva</div>
-                    <div class="testimonial-role">Proprietária - Loja de Roupas</div>
+                    <div class="testimonial-role">Propriet?ria - Loja de Roupas</div>
                 </div>
                 <div class="testimonial-card">
-                    <p class="testimonial-text">"Sistema intuitivo e completo. Minha equipe aprendeu a usar em menos de 1 hora. Recomendo para qualquer negócio."</p>
-                    <div class="testimonial-author">João Santos</div>
+                    <p class="testimonial-text">"Sistema intuitivo e completo. Minha equipe aprendeu a usar em menos de 1 hora. Recomendo para qualquer neg?cio."</p>
+                    <div class="testimonial-author">Jo?o Santos</div>
                     <div class="testimonial-role">Gerente - Supermercado</div>
                 </div>
                 <div class="testimonial-card">
-                    <p class="testimonial-text">"Melhor custo-benefício do mercado. Relatórios detalhados que me ajudam a tomar decisões estratégicas todos os dias."</p>
+                    <p class="testimonial-text">"Melhor custo-benef?cio do mercado. Relat?rios detalhados que me ajudam a tomar decis?es estrat?gicas todos os dias."</p>
                     <div class="testimonial-author">Ana Costa</div>
-                    <div class="testimonial-role">CEO - Rede de Farmácias</div>
+                    <div class="testimonial-role">CEO - Rede de Farm?cias</div>
                 </div>
             </div>
         </div>
@@ -1381,8 +1415,8 @@
     <section id="comecar" class="final-cta">
         <div class="container">
             <h2>Pronto para Vender Mais?</h2>
-            <p>Comece gratuitamente hoje e transforme a gestão do seu negócio</p>
-            <a href="#" id="btnComecarAgora" onclick="openContactModal(); return false;" class="btn-primary">Começar Agora - É Grátis</a>
+            <p>Comece gratuitamente hoje e transforme a gest?o do seu neg?cio</p>
+            <a href="#" id="btnComecarAgora" onclick="openContactModal(); return false;" class="btn-primary">Come?ar Agora - ? Gr?tis</a>
         </div>
     </section>
 
@@ -1390,13 +1424,13 @@
     <footer>
         <div class="footer-content">
             <div class="footer-section">
-                <h3>VendaFácil</h3>
-                <p>O sistema PDV mais completo e fácil de usar do mercado.</p>
+                <h3>VendaF?cil</h3>
+                <p>O sistema PDV mais completo e f?cil de usar do mercado.</p>
             </div>
             <div class="footer-section">
                 <h3>Produto</h3>
                 <ul>
-                    <li><a href="#beneficios">Benefícios</a></li>
+                    <li><a href="#beneficios">Benef?cios</a></li>
                     <li><a href="#como-funciona">Como Funciona</a></li>
                     <li><a href="#produto">Funcionalidades</a></li>
                     <li><a href="#depoimentos">Depoimentos</a></li>
@@ -1405,7 +1439,7 @@
             <div class="footer-section">
                 <h3>Empresa</h3>
                 <ul>
-                    <li><a href="#">Sobre Nós</a></li>
+                    <li><a href="#">Sobre N?s</a></li>
                     <li><a href="#">Blog</a></li>
                     <li><a href="#">Carreiras</a></li>
                     <li><a href="#">Contato</a></li>
@@ -1415,14 +1449,14 @@
                 <h3>Suporte</h3>
                 <ul>
                     <li><a href="#">Central de Ajuda</a></li>
-                    <li><a href="#">Documentação</a></li>
+                    <li><a href="#">Documenta??o</a></li>
                     <li><a href="#">Status do Sistema</a></li>
                     <li><a href="https://github.com/flowny-2026/venda_facil">GitHub</a></li>
                 </ul>
             </div>
         </div>
         <div class="footer-bottom">
-            <p>&copy; 2026 VendaFácil. Todos os direitos reservados.</p>
+            <p>&copy; 2026 VendaF?cil. Todos os direitos reservados.</p>
         </div>
     </footer>
 
@@ -1430,10 +1464,10 @@
     <div id="contactModal" class="modal">
         <div class="modal-content">
             <span class="close" onclick="closeModal()">&times;</span>
-            <div class="modal-title">Solicite uma Demonstração</div>
-            <div class="modal-subtitle">Preencha o formulário e entraremos em contato em até 24 horas</div>
+            <div class="modal-title">Solicite uma Demonstra??o</div>
+            <div class="modal-subtitle">Preencha o formul?rio e entraremos em contato em at? 24 horas</div>
             
-            <!-- Formulário de Contato -->
+            <!-- Formul?rio de Contato -->
             <form id="contactForm" class="login-form" onsubmit="submitContactForm(event)">
                 <div class="form-group">
                     <label for="companyName">Nome da Empresa *</label>
@@ -1456,12 +1490,12 @@
                 </div>
                 
                 <div class="form-group">
-                    <label for="businessType">Tipo de Negócio</label>
+                    <label for="businessType">Tipo de Neg?cio</label>
                     <select id="businessType" name="businessType">
                         <option value="">Selecione...</option>
-                        <option value="varejo">Varejo/Loja Física</option>
+                        <option value="varejo">Varejo/Loja F?sica</option>
                         <option value="restaurante">Restaurante/Bar</option>
-                        <option value="servicos">Serviços</option>
+                        <option value="servicos">Servi?os</option>
                         <option value="ecommerce">E-commerce</option>
                         <option value="outro">Outro</option>
                     </select>
@@ -1469,21 +1503,21 @@
                 
                 <div class="form-group">
                     <label for="message">Mensagem (opcional)</label>
-                    <textarea id="message" name="message" rows="3" placeholder="Conte-nos mais sobre seu negócio..."></textarea>
+                    <textarea id="message" name="message" rows="3" placeholder="Conte-nos mais sobre seu neg?cio..."></textarea>
                 </div>
                 
-                <button type="submit" class="btn-login" id="submitBtn">Solicitar Demonstração</button>
+                <button type="submit" class="btn-login" id="submitBtn">Solicitar Demonstra??o</button>
                 
                 <div style="text-align: center; margin-top: 1rem; font-size: 0.85rem; color: var(--text-muted);">
-                    <p>🔒 Seus dados estão seguros conosco</p>
+                    <p>?? Seus dados est?o seguros conosco</p>
                 </div>
             </form>
             
             <div id="successMessage" style="display: none; text-align: center; padding: 2rem;">
-                <div style="font-size: 3rem; margin-bottom: 1rem;">✅</div>
-                <h3 style="color: var(--green-primary); margin-bottom: 1rem;">Solicitação Enviada!</h3>
+                <div style="font-size: 3rem; margin-bottom: 1rem;">?</div>
+                <h3 style="color: var(--green-primary); margin-bottom: 1rem;">Solicita??o Enviada!</h3>
                 <p style="color: var(--text-secondary); margin-bottom: 1.5rem;">
-                    Recebemos sua solicitação e entraremos em contato em breve.
+                    Recebemos sua solicita??o e entraremos em contato em breve.
                 </p>
                 <button onclick="closeModal()" class="btn-login">Fechar</button>
             </div>
@@ -1498,11 +1532,11 @@
         const SUPABASE_URL = 'https://cvmjjzhvdmpbxquxepue.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN2bWpqemh2ZG1wYnhxdXhlcHVlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQxNjUxMzQsImV4cCI6MjA4OTc0MTEzNH0.Kp_sWNFiQyBKvkEBFIp8Y5dQCYFP-WDDprCVM6wbqEg';
         window.supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-        console.log('✅ Supabase inicializado');
+        console.log('? Supabase inicializado');
     </script>
 
-    <!-- Botão Flutuante WhatsApp -->
-    <a href="https://wa.me/5516992915540?text=Olá!%20Gostaria%20de%20saber%20mais%20sobre%20o%20VendaFácil" 
+    <!-- Bot?o Flutuante WhatsApp -->
+    <a href="https://wa.me/5516992915540?text=Ol?!%20Gostaria%20de%20saber%20mais%20sobre%20o%20VendaF?cil" 
        class="whatsapp-float" 
        target="_blank" 
        rel="noopener noreferrer"
@@ -1524,8 +1558,8 @@
         const { createClient } = supabase;
         window.supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         
-        console.log('✅ Supabase inicializado com sucesso!');
-        console.log('📡 URL:', SUPABASE_URL);
+        console.log('? Supabase inicializado com sucesso!');
+        console.log('?? URL:', SUPABASE_URL);
     </script>
 
     <!-- Script da Landing Page -->
