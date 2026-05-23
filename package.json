@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "build": "npm run build:admin && npm run build:cliente",
+    "generate-env": "node ./scripts/generate-env.js",
+    "build": "npm run generate-env && npm run build:admin && npm run build:cliente",
     "build:admin": "cd admin-system && npm install && npm run build",
     "build:cliente": "cd cliente-system && npm install && npm run build"
   }

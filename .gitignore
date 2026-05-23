@@ -41,6 +41,7 @@ logs/
 *.temp
 .temp/
 .tmp/
+public/env.js
 
 # Sistema operacional
 Thumbs.db

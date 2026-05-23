@@ -1527,12 +1527,19 @@
 
     
     <!-- Supabase Client -->
+    <script src="/env.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script>
-        const SUPABASE_URL = 'https://cvmjjzhvdmpbxquxepue.supabase.co';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN2bWpqemh2ZG1wYnhxdXhlcHVlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQxNjUxMzQsImV4cCI6MjA4OTc0MTEzNH0.Kp_sWNFiQyBKvkEBFIp8Y5dQCYFP-WDDprCVM6wbqEg';
-        window.supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-        console.log('✅ Supabase inicializado');
+    <script type="module">
+        const SUPABASE_URL = import.meta.env?.VITE_SUPABASE_URL || window.__env__?.VITE_SUPABASE_URL || '';
+        const SUPABASE_ANON_KEY = import.meta.env?.VITE_SUPABASE_ANON_KEY || window.__env__?.VITE_SUPABASE_ANON_KEY || '';
+
+        if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+            console.warn('⚠️ Supabase não configurado. Defina VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY no .env ou nas variáveis de ambiente do Vercel.');
+        } else {
+            window.supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            console.log('✅ Supabase inicializado com sucesso!');
+            console.log('📡 URL:', SUPABASE_URL);
+        }
     </script>
 
     <!-- Botão Flutuante WhatsApp -->
@@ -1546,21 +1553,6 @@
             <path d="M16 0C7.164 0 0 7.164 0 16c0 2.825.738 5.488 2.031 7.794L0 32l8.394-2.031C10.7 31.262 13.363 32 16 32c8.836 0 16-7.164 16-16S24.836 0 16 0zm0 29.333c-2.456 0-4.794-.656-6.794-1.794l-.488-.281-5.056 1.225 1.225-5.056-.281-.488C3.323 20.794 2.667 18.456 2.667 16c0-7.363 5.97-13.333 13.333-13.333S29.333 8.637 29.333 16 23.363 29.333 16 29.333zm7.294-9.931c-.4-.2-2.369-1.169-2.738-1.3-.369-.131-.638-.2-.906.2-.269.4-1.038 1.3-1.275 1.569-.238.269-.475.3-.875.1-.4-.2-1.688-.619-3.213-1.975-1.188-1.056-1.988-2.363-2.219-2.763-.231-.4-.025-.619.175-.819.181-.181.4-.475.6-.713.2-.238.269-.4.4-.669.131-.269.069-.5-.031-.7-.1-.2-.906-2.181-1.244-2.988-.331-.788-.669-.681-.906-.694-.238-.013-.506-.013-.775-.013s-.719.1-1.094.5c-.375.4-1.431 1.4-1.431 3.413s1.463 3.956 1.669 4.225c.206.269 2.9 4.431 7.025 6.213.981.425 1.75.681 2.35.869.988.313 1.888.269 2.6.163.794-.119 2.369-.969 2.706-1.906.338-.938.338-1.738.238-1.906-.1-.169-.369-.269-.769-.469z"/>
         </svg>
     </a>
-
-    <!-- Supabase Client -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script>
-        // Inicializar Supabase
-        const SUPABASE_URL = 'https://cvmjjzhvdmpbxquxepue.supabase.co';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN2bWpqemh2ZG1wYnhxdXhlcHVlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQxNjUxMzQsImV4cCI6MjA4OTc0MTEzNH0.Kp_sWNFiQyBKvkEBFIp8Y5dQCYFP-WDDprCVM6wbqEg';
-        
-        // Criar cliente Supabase
-        const { createClient } = supabase;
-        window.supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-        
-        console.log('✅ Supabase inicializado com sucesso!');
-        console.log('📡 URL:', SUPABASE_URL);
-    </script>
 
     <!-- Script da Landing Page -->
     <script src="landing-page-fixed.js"></script>
