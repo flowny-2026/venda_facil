@@ -4,8 +4,9 @@
   "private": true,
   "scripts": {
     "generate-env": "node ./scripts/generate-env.js",
-    "build": "npm run generate-env && npm run build:admin && npm run build:cliente",
+    "build": "npm run generate-env && npm run build:admin && npm run build:cliente && npm run copy-dist",
     "build:admin": "cd admin-system && npm install && npm run build",
-    "build:cliente": "cd cliente-system && npm install && npm run build"
+    "build:cliente": "cd cliente-system && npm install && npm run build",
+    "copy-dist": "node scripts/copy-dist.js"
   }
 }

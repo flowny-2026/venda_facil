@@ -1,37 +1,15 @@
 {
   "version": 2,
-  "builds": [
+  "buildCommand": "npm run build",
+  "outputDirectory": "public",
+  "rewrites": [
     {
-      "src": "admin-system/package.json",
-      "use": "@vercel/static-build",
-      "config": {
-        "distDir": "dist"
-      }
+      "source": "/admin/:path*",
+      "destination": "/admin/index.html"
     },
     {
-      "src": "cliente-system/package.json",
-      "use": "@vercel/static-build",
-      "config": {
-        "distDir": "dist"
-      }
-    },
-    {
-      "src": "public/**",
-      "use": "@vercel/static"
-    }
-  ],
-  "routes": [
-    {
-      "src": "^/admin(/.*)?$",
-      "dest": "/admin-system/dist/index.html"
-    },
-    {
-      "src": "^/cliente(/.*)?$",
-      "dest": "/cliente-system/dist/index.html"
-    },
-    {
-      "src": "^/(.*)",
-      "dest": "/public/$1"
+      "source": "/cliente/:path*",
+      "destination": "/cliente/index.html"
     }
   ]
 }
