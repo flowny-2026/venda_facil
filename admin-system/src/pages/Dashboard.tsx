@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import Layout from '../components/Layout';
 import { 
@@ -487,8 +488,7 @@ export default function Dashboard() {
         <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-6">
           <h3 className="text-lg font-semibold text-slate-100 mb-4">Ações Rápidas</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <a
-              href="/clientes"
+            <Link to="/clientes"
               className="flex items-center gap-3 p-4 bg-slate-800/50 border border-slate-700 rounded-lg hover:border-slate-600 transition-colors"
             >
               <Building className="w-5 h-5 text-blue-400" />
@@ -496,10 +496,9 @@ export default function Dashboard() {
                 <div className="text-sm font-medium text-slate-200">Gerenciar Clientes</div>
                 <div className="text-xs text-slate-400">Adicionar nova empresa</div>
               </div>
-            </a>
+            </Link>
 
-            <a
-              href="/vendas"
+            <Link to="/vendas"
               className="flex items-center gap-3 p-4 bg-slate-800/50 border border-slate-700 rounded-lg hover:border-slate-600 transition-colors"
             >
               <TrendingUp className="w-5 h-5 text-green-400" />
@@ -507,10 +506,9 @@ export default function Dashboard() {
                 <div className="text-sm font-medium text-slate-200">Ver Todas as Vendas</div>
                 <div className="text-xs text-slate-400">Relatório consolidado</div>
               </div>
-            </a>
+            </Link>
 
-            <a
-              href="/configuracoes"
+            <Link to="/configuracoes"
               className="flex items-center gap-3 p-4 bg-slate-800/50 border border-slate-700 rounded-lg hover:border-slate-600 transition-colors"
             >
               <Calendar className="w-5 h-5 text-purple-400" />
@@ -518,7 +516,7 @@ export default function Dashboard() {
                 <div className="text-sm font-medium text-slate-200">Configurações</div>
                 <div className="text-xs text-slate-400">Ajustar sistema</div>
               </div>
-            </a>
+            </Link>
           </div>
         </div>
       </div>
