@@ -192,7 +192,7 @@ export default function Layout({ children }: { children: ReactNode }) {
             <div className="flex items-center gap-6">
               <div className="flex-shrink-0 flex items-center gap-3">
                 <img 
-                  src="/assets/images/logo-vendafacil.png" 
+                  src="/admin/assets/images/logo-vendafacil.png" 
                   alt="VendaFácil Admin" 
                   className="h-[45px] w-auto object-contain"
                   style={{ filter: 'drop-shadow(0 2px 8px rgba(239, 68, 68, 0.3))' }}
