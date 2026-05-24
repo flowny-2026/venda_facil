@@ -163,7 +163,7 @@ export default function Clientes() {
       }
 
       // Tentar deletar via função RPC especial
-      const { data: deleteResult, error: deleteError } = await supabase.rpc(
+      const { error: deleteError } = await supabase.rpc(
         'delete_auth_user',
         { target_user_id: userId }
       );
