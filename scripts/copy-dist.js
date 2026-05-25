@@ -17,4 +17,9 @@ function copyDir(src, dest) {
 
 copyDir('admin-system/dist', 'public/admin');
 copyDir('cliente-system/dist', 'public/cliente');
+
+// Copiar assets públicos para as subpastas
+copyDir('admin-system/public/assets', 'public/admin/assets');
+copyDir('cliente-system/public/assets', 'public/cliente/assets');
+
 console.log('Arquivos copiados com sucesso!');
