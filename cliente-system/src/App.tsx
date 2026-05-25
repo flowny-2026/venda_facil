@@ -15,6 +15,7 @@ import ResetPassword from "./pages/ResetPassword";
 import AuthModal from "./components/AuthModal";
 import { useState, useEffect } from "react";
 import { supabase } from "./lib/supabase";
+import logoUrl from './assets/logo-vendafacil.png'
 
 function App() {
   const { user, loading: authLoading, signOut } = useAuth();
@@ -162,7 +163,7 @@ function App() {
           {/* Logo */}
           <div className="flex justify-center mb-8">
             <img 
-              src="/assets/images/logo-vendafacil.png" 
+              src={logoUrl}
               alt="VendaFácil" 
               className="h-28 w-auto object-contain"
               style={{ filter: 'drop-shadow(0 4px 12px rgba(59, 130, 246, 0.4))' }}
