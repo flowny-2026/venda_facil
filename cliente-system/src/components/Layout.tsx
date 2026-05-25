@@ -2,10 +2,12 @@ import { ReactNode } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { BarChart3, FileText, Settings, ShoppingCart, Package, Users, CreditCard, UserCheck } from "lucide-react";
 import { useUserRole } from "../hooks/useUserRole";
+import logoUrl from '../../public/assets/images/logo-vendafacil.png'
 
 export default function Layout({ children }: { children: ReactNode }) {
   const location = useLocation();
   const { permissions, isSeller, isManager } = useUserRole();
+  
 
   const allNavigation = [
     { name: "Painel", href: "/", icon: BarChart3, requiresPermission: null },
@@ -41,7 +43,7 @@ export default function Layout({ children }: { children: ReactNode }) {
             <div className="flex items-center gap-6 flex-1 min-w-0">
               <div className="flex-shrink-0 flex items-center gap-3">
                 <img 
-                 src="/cliente/assets/images/logo-vendafacil.png"
+               src={logoUrl}
                   alt="VendaFácil" 
                   className="h-[50px] w-auto object-contain"
                   style={{ filter: 'drop-shadow(0 2px 8px rgba(59, 130, 246, 0.3))' }}
