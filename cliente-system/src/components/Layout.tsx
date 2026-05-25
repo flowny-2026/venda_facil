@@ -2,7 +2,7 @@ import { ReactNode } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { BarChart3, FileText, Settings, ShoppingCart, Package, Users, CreditCard, UserCheck } from "lucide-react";
 import { useUserRole } from "../hooks/useUserRole";
-import logoUrl from '../../public/assets/images/logo-vendafacil.png'
+import logoUrl from '../assets/logo-vendafacil.png'
 
 export default function Layout({ children }: { children: ReactNode }) {
   const location = useLocation();
