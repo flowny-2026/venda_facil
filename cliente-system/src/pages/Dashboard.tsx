@@ -340,73 +340,47 @@ export default function Dashboard() {
         </div>
       )}
 
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-100">
-            {isSeller ? '📊 Minhas Vendas' : '📊 Painel de Vendas'}
-          </h1>
-          <p className="mt-2 text-slate-400">
-            {useSupabase ? (
-              <>
-                🔗 Conectado ao Supabase • {user?.email}
-                {isSeller && permissions?.sellerName && (
-                  <> • Vendedor: {permissions.sellerName}</>
-                )}
-                {!isSeller && permissions?.companyName && (
-                  <> • {permissions.companyName}</>
-                )} • {orders.length} vendas
-              </>
-            ) : (
-              <>
-                {useSupabase ? (
-                  <>🔗 Conectado ao Supabase • {orders.length} vendas registradas</>
-                ) : (
-                  <>💾 Usando armazenamento local • {orders.length} vendas registradas</>
-                )}
-              </>
-            )}
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          {useSupabase && user && (
-            <div className="flex items-center gap-2 px-3 py-2 bg-slate-800/50 border border-slate-700 rounded-lg">
-              <User className="w-4 h-4 text-slate-400" />
-              <span className="text-sm text-slate-300">{user.email}</span>
-              <button
-                onClick={handleLogout}
-                className="ml-2 p-1 text-slate-400 hover:text-slate-200 rounded"
-              >
-                <LogOut className="w-4 h-4" />
-              </button>
-            </div>
-          )}
-          <button
-            onClick={handleClearAllData}
-            className="flex items-center gap-2 px-4 py-2 text-sm text-red-400 hover:text-red-300 border border-red-500/30 rounded-lg hover:border-red-500/50 transition-colors"
-          >
-            🗑️ Limpar Tudo
-          </button>
-          <button
-            onClick={handleRefresh}
-            disabled={isRefreshing}
-            className={`flex items-center gap-2 px-4 py-2 text-sm border border-slate-700 rounded-lg transition-colors ${
-              isRefreshing 
-                ? 'text-slate-500 border-slate-800 cursor-not-allowed' 
-                : 'text-slate-400 hover:text-slate-200 hover:border-slate-600'
-            }`}
-          >
-            <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-            {isRefreshing ? 'Atualizando...' : 'Atualizar'}
-          </button>
-          <button
-            onClick={() => setIsAddModalOpen(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            Nova Venda
-          </button>
-        </div>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+  <div className="min-w-0">
+    <h1 className="text-2xl font-bold text-slate-100">
+      {isSeller ? '📊 Minhas Vendas' : '📊 Painel de Vendas'}
+    </h1>
+    <p className="mt-1 text-sm text-slate-400 truncate">
+      {useSupabase ? (
+        <>
+          🔗 {user?.email}
+          {isSeller && permissions?.sellerName && <> • {permissions.sellerName}</>}
+          {!isSeller && permissions?.companyName && <> • {permissions.companyName}</>}
+          {' '}• {orders.length} vendas
+        </>
+      ) : (
+        <>💾 Local • {orders.length} vendas</>
+      )}
+    </p>
+  </div>
+  <div className="flex items-center gap-2 flex-shrink-0">
+    {useSupabase && user && (
+      <div className="hidden sm:flex items-center gap-2 px-3 py-2 bg-slate-800/50 border border-slate-700 rounded-lg">
+        <User className="w-4 h-4 text-slate-400" />
+        <span className="text-sm text-slate-300 max-w-[150px] truncate">{user.email}</span>
+        <button onClick={handleLogout} className="ml-1 p-1 text-slate-400 hover:text-slate-200 rounded">
+          <LogOut className="w-4 h-4" />
+        </button>
       </div>
+    )}
+    <button onClick={handleClearAllData} className="flex items-center gap-1 px-3 py-2 text-xs text-red-400 hover:text-red-300 border border-red-500/30 rounded-lg transition-colors">
+      🗑️ <span className="hidden sm:inline ml-1">Limpar</span>
+    </button>
+    <button onClick={handleRefresh} disabled={isRefreshing} className={`flex items-center gap-1 px-3 py-2 text-xs border border-slate-700 rounded-lg transition-colors ${isRefreshing ? 'text-slate-500 cursor-not-allowed' : 'text-slate-400 hover:text-slate-200'}`}>
+      <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+      <span className="hidden sm:inline ml-1">{isRefreshing ? 'Atualizando...' : 'Atualizar'}</span>
+    </button>
+    <button onClick={() => setIsAddModalOpen(true)} className="flex items-center gap-1 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-medium transition-colors">
+      <Plus className="w-4 h-4" />
+      <span>Nova Venda</span>
+    </button>
+  </div>
+</div>
 
       <FiltersBar value={filters} onChange={setFilters} />
 
