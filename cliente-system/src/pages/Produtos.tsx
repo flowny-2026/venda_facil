@@ -264,60 +264,55 @@ export default function Produtos() {
     const product = products.find(p => p.id === productId);
     if (!product) return;
 
-    // Verificar se o produto já foi usado em vendas
+    // Tentar excluir diretamente
     try {
-      const { data: salesCount, error: checkError } = await supabase
-        .from('sale_items')
-        .select('id', { count: 'exact', head: true })
-        .eq('product_id', productId);
-
-      if (checkError) throw checkError;
-
-      // Se o produto foi usado em vendas, apenas desativar
-      if (salesCount && (salesCount as any).count > 0) {
-        if (!confirm(
-          'Este produto já foi usado em vendas e não pode ser excluído.\n\n' +
-          'Deseja DESATIVAR o produto? Ele não aparecerá mais no PDV, mas o histórico de vendas será mantido.'
-        )) return;
-
-        const { error } = await supabase
-          .from('products')
-          .update({ active: false })
-          .eq('id', productId);
-
-        if (error) throw error;
-
-        setProducts(prev => 
-          prev.map(p => p.id === productId ? { ...p, active: false } : p)
-        );
-        alert('Produto desativado com sucesso!');
-        return;
-      }
-
-      // Se nunca foi usado, pode excluir
-      if (!confirm('Tem certeza que deseja excluir este produto permanentemente?')) return;
+      if (!confirm('Tem certeza que deseja excluir este produto?')) return;
       
       const { error } = await supabase
         .from('products')
         .delete()
         .eq('id', productId);
 
-      if (error) throw error;
+      // Se deu erro de foreign key, oferecer desativar
+      if (error) {
+        if (error.message?.includes('foreign key') || 
+            error.message?.includes('sale_items') ||
+            error.code === '23503') {
+          
+          // Produto tem vendas vinculadas, oferecer desativar
+          if (!confirm(
+            'Este produto não pode ser excluído porque já foi usado em vendas.\n\n' +
+            'Deseja DESATIVAR o produto?\n' +
+            'Ele não aparecerá mais no PDV, mas o histórico de vendas será mantido.\n\n' +
+            'Clique OK para DESATIVAR ou Cancelar para manter como está.'
+          )) return;
 
+          // Desativar o produto
+          const { error: updateError } = await supabase
+            .from('products')
+            .update({ active: false })
+            .eq('id', productId);
+
+          if (updateError) throw updateError;
+
+          setProducts(prev => 
+            prev.map(p => p.id === productId ? { ...p, active: false } : p)
+          );
+          alert('✅ Produto desativado com sucesso!\n\nEle não aparecerá mais no PDV.');
+          return;
+        }
+        
+        // Outro tipo de erro
+        throw error;
+      }
+
+      // Exclusão bem-sucedida
       setProducts(prev => prev.filter(p => p.id !== productId));
-      alert('Produto excluído com sucesso!');
+      alert('✅ Produto excluído com sucesso!');
+      
     } catch (error: any) {
       console.error('Erro ao processar produto:', error);
-      
-      // Se der erro de foreign key, explicar melhor
-      if (error.message?.includes('foreign key') || error.message?.includes('sale_items')) {
-        alert(
-          'Este produto não pode ser excluído porque está vinculado a vendas.\n\n' +
-          'Você pode DESATIVAR o produto para que não apareça mais no PDV.'
-        );
-      } else {
-        alert('Erro ao processar produto: ' + error.message);
-      }
+      alert('❌ Erro ao processar produto: ' + (error.message || 'Erro desconhecido'));
     }
   };
 
