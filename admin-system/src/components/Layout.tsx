@@ -43,7 +43,7 @@ export default function Layout({ children }: { children: ReactNode }) {
     try {
       setIsLoadingLeads(true);
       setLastUpdateTime(now);
-      const { data, error } = await supabase.from('landing_leads').select('id, status').limit(1);
+      const { error } = await supabase.from('landing_leads').select('id, status').limit(1);
       if (error) { setNewLeadsCount(0); return; }
       const { data: newLeads, error: countError } = await supabase.from('landing_leads').select('id').eq('status', 'novo');
       if (countError) { setNewLeadsCount(0); return; }
