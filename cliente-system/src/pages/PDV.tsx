@@ -23,6 +23,8 @@ import {
 interface Product {
   id: string;
   name: string;
+  barcode?: string;
+  sku?: string;
   price: number;
   promotional_price: number;
   stock_quantity: number;
@@ -395,8 +397,24 @@ export default function PDV() {
   };
 
   const filteredProducts = products.filter(product =>
-    product.name.toLowerCase().includes(searchTerm.toLowerCase())
+    product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    product.barcode?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    product.sku?.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  // Auto-adicionar produto quando código de barras é escaneado
+  useEffect(() => {
+    if (searchTerm.length > 0 && filteredProducts.length === 1) {
+      // Aguardar 300ms para garantir que o código completo foi digitado
+      const timer = setTimeout(() => {
+        const product = filteredProducts[0];
+        addToCart(product);
+        setSearchTerm(''); // Limpar campo após adicionar
+      }, 300);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [searchTerm, filteredProducts]);
 
   const { subtotal, discount, total, change } = calculateTotals();
 
@@ -421,9 +439,10 @@ export default function PDV() {
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
             <input
               type="text"
-              placeholder="Buscar produtos..."
+              placeholder="Buscar por nome, código de barras ou SKU..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
+              autoFocus
               className="w-full bg-slate-800/50 border border-slate-700 rounded-lg pl-10 pr-4 py-2 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
             />
           </div>
