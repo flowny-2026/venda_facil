@@ -396,11 +396,21 @@ export default function PDV() {
     }).format(value);
   };
 
-  const filteredProducts = products.filter(product =>
-    product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    product.barcode?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    product.sku?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredProducts = products.filter(product => {
+    const searchLower = searchTerm.toLowerCase();
+    const matchName = product.name.toLowerCase().includes(searchLower);
+    const matchBarcode = product.barcode?.toLowerCase().includes(searchLower);
+    const matchSku = product.sku?.toLowerCase().includes(searchLower);
+    
+    // Debug: mostrar o que está sendo comparado
+    if (searchTerm.length > 5) {
+      console.log('Buscando:', searchTerm);
+      console.log('Produto:', product.name, '| Barcode:', product.barcode, '| SKU:', product.sku);
+      console.log('Match:', { matchName, matchBarcode, matchSku });
+    }
+    
+    return matchName || matchBarcode || matchSku;
+  });
 
   // Auto-adicionar produto quando código de barras é escaneado
   useEffect(() => {
