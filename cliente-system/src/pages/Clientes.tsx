@@ -36,11 +36,11 @@ interface SaleHistory {
 function getBirthdayStatus(birthDate: string): 'today' | 'tomorrow' | null {
   if (!birthDate) return null;
   const today = new Date();
-  const birth = new Date(birthDate);
+  const parts = birthDate.split('T')[0].split('-');
+  const birthMonth = parseInt(parts[1]) - 1;
+  const birthDay = parseInt(parts[2]);
   const todayMonth = today.getMonth();
   const todayDay = today.getDate();
-  const birthMonth = birth.getMonth();
-  const birthDay = birth.getDate();
   if (todayMonth === birthMonth && todayDay === birthDay) return 'today';
   const tomorrow = new Date(today);
   tomorrow.setDate(today.getDate() + 1);
