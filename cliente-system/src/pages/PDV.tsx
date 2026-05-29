@@ -446,20 +446,6 @@ export default function PDV() {
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100vh-8rem)]">
       {/* Produtos */}
       <div className="lg:col-span-2 space-y-4">
-        {/* Input Código de Barras */}
-          <div className="bg-slate-900/50 border border-green-500/30 rounded-lg p-3 flex items-center gap-3">
-            <Search className="w-5 h-5 text-green-400 flex-shrink-0" />
-            <input
-              ref={barcodeRef}
-              type="text"
-              value={barcodeInput}
-              onChange={(e) => setBarcodeInput(e.target.value)}
-              onKeyDown={handleBarcodeInput}
-              placeholder="🔫 Bipe o código de barras ou digite e pressione Enter..."
-              className="flex-1 bg-transparent text-sm text-slate-200 focus:outline-none placeholder-slate-500"
-              autoFocus
-            />
-          </div>
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-semibold text-slate-100">Produtos</h2>
           <div className="relative flex-1 max-w-md ml-4">
