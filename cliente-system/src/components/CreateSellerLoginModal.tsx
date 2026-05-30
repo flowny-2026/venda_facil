@@ -67,20 +67,16 @@ export default function CreateSellerLoginModal({ seller, onClose, onSuccess }: C
 
       const companyId = currentUserData.company_id;
 
-      // 2. Criar usuário no Supabase Auth
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: email,
-        password: password,
-        options: {
-          emailRedirectTo: window.location.origin,
-          data: {
-            seller_name: seller.name,
-            company_id: companyId
-          },
-          // Desabilitar confirmação de email para evitar problemas
-          emailConfirm: false
-        }
-      });
+      // 2. Criar usuário via função RPC sem afetar sessão atual
+const { data: authData, error: authError } = await supabase.rpc('create_seller_user', {
+  p_email: email,
+  p_password: password,
+  p_seller_name: seller.name,
+  p_company_id: companyId,
+  p_seller_id: seller.id
+});
+
+if (authError) throw new Error(`Erro ao criar usuário: ${authError.message}`);
 
       if (authError) {
         console.error('Erro ao criar usuário:', authError);
