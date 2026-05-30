@@ -371,14 +371,16 @@ export default function Dashboard() {
     <button onClick={handleClearAllData} className="flex items-center gap-1 px-3 py-2 text-xs text-red-400 hover:text-red-300 border border-red-500/30 rounded-lg transition-colors">
       🗑️ <span className="hidden sm:inline ml-1">Limpar</span>
     </button>
-    <button onClick={handleRefresh} disabled={isRefreshing} className={`flex items-center gap-1 px-3 py-2 text-xs border border-slate-700 rounded-lg transition-colors ${isRefreshing ? 'text-slate-500 cursor-not-allowed' : 'text-slate-400 hover:text-slate-200'}`}>
+  <button onClick={handleRefresh} disabled={isRefreshing} className={`flex items-center gap-1 px-3 py-2 text-xs border border-slate-700 rounded-lg transition-colors ${isRefreshing ? 'text-slate-500 cursor-not-allowed' : 'text-slate-400 hover:text-slate-200'}`}>
       <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
       <span className="hidden sm:inline ml-1">{isRefreshing ? 'Atualizando...' : 'Atualizar'}</span>
     </button>
-    <button onClick={() => setIsAddModalOpen(true)} className="flex items-center gap-1 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-medium transition-colors">
-      <Plus className="w-4 h-4" />
-      <span>Nova Venda</span>
-    </button>
+    {!isSeller && (
+      <button onClick={() => setIsAddModalOpen(true)} className="flex items-center gap-1 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-medium transition-colors">
+        <Plus className="w-4 h-4" />
+        <span>Nova Venda</span>
+      </button>
+    )}
   </div>
 </div>
 
