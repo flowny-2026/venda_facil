@@ -375,12 +375,7 @@ export default function Dashboard() {
       <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
       <span className="hidden sm:inline ml-1">{isRefreshing ? 'Atualizando...' : 'Atualizar'}</span>
     </button>
-    {!isSeller && (
-      <button onClick={() => setIsAddModalOpen(true)} className="flex items-center gap-1 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-medium transition-colors">
-        <Plus className="w-4 h-4" />
-        <span>Nova Venda</span>
-      </button>
-    )}
+    
   </div>
 </div>
 
