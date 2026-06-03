@@ -4,7 +4,6 @@ import Select from "./Select";
 export type Filters = {
   period: "7d" | "30d" | "90d" | "all";
   status: "all" | "paid" | "pending" | "canceled";
-  category: "all" | "SaaS" | "Serviços" | "Hardware";
   query: string;
 };
 
