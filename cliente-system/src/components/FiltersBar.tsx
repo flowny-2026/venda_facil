@@ -15,10 +15,9 @@ export default function FiltersBar({
   onChange: (v: Filters) => void;
 }) {
   const hasActive =
-    value.period !== "30d" ||
-    value.status !== "all" ||
-    value.category !== "all" ||
-    value.query.trim() !== "";
+  value.period !== "30d" ||
+  value.status !== "all" ||
+  value.query.trim() !== "";
 
   return (
     <section className="bg-slate-900/50 border border-slate-800 rounded-2xl p-4 shadow-soft">
@@ -48,27 +47,15 @@ export default function FiltersBar({
             onChange={(status) => onChange({ ...value, status: status as Filters["status"] })}
           />
 
-          <Select
-            label="Categoria"
-            value={value.category}
-            options={[
-              { value: "all", label: "Todas" },
-              { value: "SaaS", label: "SaaS" },
-              { value: "Serviços", label: "Serviços" },
-              { value: "Hardware", label: "Hardware" },
-            ]}
-            onChange={(category) => onChange({ ...value, category: category as Filters["category"] })}
-          />
-
+          
           {hasActive && (
             <button
               onClick={() =>
-                onChange({
-                  period: "30d",
-                  status: "all",
-                  category: "all",
-                  query: "",
-                })
+               onChange({
+                period: "30d",
+                status: "all",
+                query: "",
+              })
               }
               className="flex items-center gap-1 px-3 py-2 text-xs text-slate-400 hover:text-slate-200 border border-slate-700 rounded-lg hover:border-slate-600 transition-colors"
             >
