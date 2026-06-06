@@ -100,8 +100,8 @@ export default function DataTable({ rows }: { rows: OrderRow[] }) {
     return (
       <div className="bg-slate-900/50 border border-slate-800 rounded-2xl shadow-soft overflow-hidden">
         <div className="p-4 border-b border-slate-800">
-          <h3 className="font-semibold">Pedidos recentes</h3>
-          <p className="text-xs text-slate-400 mt-1">Lista de todos os pedidos</p>
+          <h3 className="font-semibold">Últimas Vendas</h3>
+          <p className="text-xs text-slate-400 mt-1">Lista de todas as vendas</p>
         </div>
         <div className="p-8 text-center">
           <div className="text-slate-400 mb-2">📊</div>
@@ -115,8 +115,8 @@ export default function DataTable({ rows }: { rows: OrderRow[] }) {
   return (
     <div className="bg-slate-900/50 border border-slate-800 rounded-2xl shadow-soft overflow-hidden">
       <div className="p-4 border-b border-slate-800">
-        <h3 className="font-semibold">Pedidos recentes</h3>
-        <p className="text-xs text-slate-400 mt-1">Lista de todos os pedidos</p>
+        <h3 className="font-semibold">Últimas Vendas</h3>
+        <p className="text-xs text-slate-400 mt-1">Lista de todas as vendas</p>
       </div>
       
       <div className="overflow-x-auto">

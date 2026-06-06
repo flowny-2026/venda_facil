@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerador de Placeholders - VendaFácil</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #f5f5f5;
+            padding: 2rem;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            color: #0B3C8C;
+            margin-bottom: 1rem;
+        }
+        
+        .info {
+            background: #e3f2fd;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 2rem;
+            border-left: 4px solid #0B3C8C;
+        }
+        
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+        
+        .placeholder-card {
+            border: 2px dashed #ccc;
+            padding: 2rem;
+            text-align: center;
+            border-radius: 8px;
+            background: #fafafa;
+        }
+        
+        .placeholder-card h3 {
+            color: #0B3C8C;
+            margin-bottom: 1rem;
+        }
+        
+        .placeholder-image {
+            width: 100%;
+            height: 200px;
+            background: linear-gradient(135deg, #0B3C8C, #4CAF50);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+        
+        .specs {
+            font-size: 0.9rem;
+            color: #666;
+            margin-top: 0.5rem;
+        }
+        
+        .download-btn {
+            background: #FF7A00;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            margin-top: 1rem;
+            text-decoration: none;
+            display: inline-block;
+        }
+        
+        .download-btn:hover {
+            background: #E66D00;
+        }
+        
+        .instructions {
+            background: #fff3cd;
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin-top: 2rem;
+            border-left: 4px solid #FF7A00;
+        }
+        
+        .instructions h2 {
+            color: #FF7A00;
+            margin-bottom: 1rem;
+        }
+        
+        .instructions ol {
+            margin-left: 1.5rem;
+        }
+        
+        .instructions li {
+            margin-bottom: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📸 Guia de Imagens - VendaFácil</h1>
+        
+        <div class="info">
+            <strong>ℹ️ Instruções:</strong> Esta página mostra os placeholders das imagens necessárias. 
+            Substitua os arquivos na pasta <code>assets/images/</code> pelas suas imagens reais.
+        </div>
+        
+        <div class="grid">
+            <!-- Logo -->
+            <div class="placeholder-card">
+                <h3>Logo Principal</h3>
+                <div class="placeholder-image">💰</div>
+                <p><strong>Arquivo:</strong> logo.png</p>
+                <p class="specs">Tamanho: 200x60px | PNG transparente</p>
+                <a href="https://www.canva.com/create/logos/" target="_blank" class="download-btn">Criar no Canva</a>
+            </div>
+            
+            <!-- Logo White -->
+            <div class="placeholder-card">
+                <h3>Logo Branco</h3>
+                <div class="placeholder-image" style="background: #0B3C8C;">💰</div>
+                <p><strong>Arquivo:</strong> logo-white.png</p>
+                <p class="specs">Tamanho: 200x60px | PNG transparente</p>
+                <a href="https://www.canva.com/create/logos/" target="_blank" class="download-btn">Criar no Canva</a>
+            </div>
+            
+            <!-- Hero Mockup -->
+            <div class="placeholder-card">
+                <h3>Hero Mockup</h3>
+                <div class="placeholder-image">💻📱</div>
+                <p><strong>Arquivo:</strong> hero-mockup.png</p>
+                <p class="specs">Tamanho: 1200x800px | PNG ou JPG</p>
+                <a href="https://www.mockupworld.co/" target="_blank" class="download-btn">Baixar Mockup</a>
+            </div>
+            
+            <!-- Dashboard -->
+            <div class="placeholder-card">
+                <h3>Dashboard Screenshot</h3>
+                <div class="placeholder-image">📊</div>
+                <p><strong>Arquivo:</strong> dashboard-screenshot.png</p>
+                <p class="specs">Tamanho: 800x600px | PNG</p>
+                <p class="specs">Tire um screenshot do seu sistema</p>
+            </div>
+            
+            <!-- PDV -->
+            <div class="placeholder-card">
+                <h3>PDV Screenshot</h3>
+                <div class="placeholder-image">🛒</div>
+                <p><strong>Arquivo:</strong> pdv-screenshot.png</p>
+                <p class="specs">Tamanho: 800x600px | PNG</p>
+                <p class="specs">Tire um screenshot do PDV</p>
+            </div>
+            
+            <!-- Mobile App -->
+            <div class="placeholder-card">
+                <h3>Mobile App</h3>
+                <div class="placeholder-image">📱</div>
+                <p><strong>Arquivo:</strong> mobile-app.png</p>
+                <p class="specs">Tamanho: 400x800px | PNG</p>
+                <a href="https://mockuphone.com/" target="_blank" class="download-btn">Criar Mockup</a>
+            </div>
+            
+            <!-- Favicon -->
+            <div class="placeholder-card">
+                <h3>Favicon</h3>
+                <div class="placeholder-image" style="height: 100px;">💰</div>
+                <p><strong>Arquivo:</strong> favicon.ico</p>
+                <p class="specs">Tamanho: 32x32px | ICO</p>
+                <a href="https://favicon.io/" target="_blank" class="download-btn">Gerar Favicon</a>
+            </div>
+            
+            <!-- OG Image -->
+            <div class="placeholder-card">
+                <h3>OG Image (Social)</h3>
+                <div class="placeholder-image">🔗</div>
+                <p><strong>Arquivo:</strong> og-image.png</p>
+                <p class="specs">Tamanho: 1200x630px | PNG ou JPG</p>
+                <p class="specs">Para compartilhamento em redes sociais</p>
+            </div>
+        </div>
+        
+        <div class="instructions">
+            <h2>📝 Como Adicionar as Imagens</h2>
+            <ol>
+                <li><strong>Crie ou baixe suas imagens</strong> usando as ferramentas sugeridas acima</li>
+                <li><strong>Otimize as imagens</strong> usando <a href="https://tinypng.com/" target="_blank">TinyPNG</a> para reduzir o tamanho</li>
+                <li><strong>Salve os arquivos</strong> na pasta <code>assets/images/</code> com os nomes exatos indicados</li>
+                <li><strong>Atualize o index.html</strong> substituindo os emojis pelas tags <code>&lt;img&gt;</code></li>
+                <li><strong>Teste localmente</strong> abrindo o index.html no navegador</li>
+                <li><strong>Faça commit e push</strong> para o GitHub</li>
+            </ol>
+            
+            <h3 style="margin-top: 1.5rem;">Exemplo de código para usar as imagens:</h3>
+            <pre style="background: #f5f5f5; padding: 1rem; border-radius: 6px; overflow-x: auto; margin-top: 0.5rem;">
+&lt;!-- Logo no header --&gt;
+&lt;img src="assets/images/logo.png" alt="VendaFácil" style="height: 40px;"&gt;
+
+&lt;!-- Hero mockup --&gt;
+&lt;img src="assets/images/hero-mockup.png" alt="Sistema VendaFácil" style="max-width: 100%;"&gt;
+
+&lt;!-- Favicon no head --&gt;
+&lt;link rel="icon" type="image/x-icon" href="assets/images/favicon.ico"&gt;
+            </pre>
+        </div>
+    </div>
+</body>
+</html>
