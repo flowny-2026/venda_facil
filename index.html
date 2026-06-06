@@ -528,45 +528,47 @@
             font-size: 1.1rem;
         }
         
-        .testimonials {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-            gap: 2rem;
-            margin-top: 4rem;
-        }
-        
-        .testimonial-card {
-            background: var(--bg-card);
-            padding: 2.5rem;
-            border-radius: 16px;
-            border-left: 4px solid var(--green-primary);
-            border-top: 1px solid var(--border-color);
-            border-right: 1px solid var(--border-color);
-            border-bottom: 1px solid var(--border-color);
-            transition: all 0.3s ease;
-        }
-        
-        .testimonial-card:hover {
-            transform: translateY(-5px);
-            border-left-color: var(--blue-primary);
-        }
-        
-        .testimonial-text {
-            font-style: italic;
-            margin-bottom: 1.5rem;
-            color: var(--text-secondary);
-            line-height: 1.8;
-        }
-        
-        .testimonial-author {
-            font-weight: 600;
-            color: var(--text-primary);
-        }
-        
-        .testimonial-role {
-            font-size: 0.9rem;
-            color: var(--text-muted);
-        }
+        .system-gallery {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+                gap: 2rem;
+                margin-top: 4rem;
+            }
+
+            .gallery-item {
+                background: var(--bg-card);
+                border: 1px solid var(--border-color);
+                border-radius: 16px;
+                overflow: hidden;
+                transition: all 0.3s ease;
+            }
+
+            .gallery-item:hover {
+                transform: translateY(-8px);
+                border-color: var(--blue-primary);
+                box-shadow: 0 20px 40px rgba(59, 130, 246, 0.15);
+            }
+
+            .gallery-item img {
+                width: 100%;
+                display: block;
+            }
+
+            .gallery-info {
+                padding: 1.2rem;
+                text-align: center;
+            }
+
+            .gallery-info h3 {
+                color: var(--text-primary);
+                margin-bottom: 0.5rem;
+                font-size: 1.1rem;
+            }
+
+            .gallery-info p {
+                color: var(--text-secondary);
+                font-size: 0.95rem;
+            }
         
         /* Final CTA */
         .final-cta {
@@ -1080,9 +1082,7 @@
                 padding: 60px 1.5rem;
             }
             
-            .benefits-grid, .steps, .showcase-content, .testimonials {
-                grid-template-columns: 1fr;
-            }
+            
         }
 
         /* Animations */
@@ -1214,7 +1214,7 @@
                 <li><a href="#beneficios">Benefícios</a></li>
                 <li><a href="#como-funciona">Como Funciona</a></li>
                 <li><a href="#produto">Produto</a></li>
-                <li><a href="#depoimentos">Depoimentos</a></li>
+                <li><a href="#Sistema">Sistema</a></li>
             </ul>
             <a href="#" onclick="openContactModal(); return false;" class="cta-button header-cta">Começar Agora</a>
             <button type="button" class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Abrir menu" aria-expanded="false" aria-controls="mobileNav">☰</button>
@@ -1231,7 +1231,7 @@
                 <li><a href="#beneficios">Benefícios</a></li>
                 <li><a href="#como-funciona">Como Funciona</a></li>
                 <li><a href="#produto">Produto</a></li>
-                <li><a href="#depoimentos">Depoimentos</a></li>
+                <li><a href="#Sistema">Sistema</a></li>
                 <li>
                     <a href="#" onclick="openContactModal(); closeMobileMenu(); return false;" class="cta-button mobile-nav-cta">Começar Agora</a>
                 </li>
@@ -1370,50 +1370,58 @@ O Venda Fácil ajuda pequenas empresas a organizar vendas, clientes e relatório
     </section>
 
     <!-- Social Proof -->
-    <section id="depoimentos" class="social-proof">
-        <div class="container">
-            <div class="section-title">
-                <h2>Empresas que Confiam</h2>
-                <p>Mais de 1.000 negócios já vendem com o VendaFácil</p>
-            </div>
-            <div class="stats">
-                <div class="stat-card">
-                    <div class="stat-number">1.000+</div>
-                    <div class="stat-label">Clientes Ativos</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number">50K+</div>
-                    <div class="stat-label">Vendas por Dia</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number">99.9%</div>
-                    <div class="stat-label">Uptime</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number">4.9⭐</div>
-                    <div class="stat-label">Avaliação Média</div>
-                </div>
-            </div>
-            <div class="testimonials">
-                <div class="testimonial-card">
-                    <p class="testimonial-text">"O VendaFácil transformou nossa loja. Aumentamos as vendas em 40% no primeiro mês e o controle de estoque ficou muito mais fácil."</p>
-                    <div class="testimonial-author">Maria Silva</div>
-                    <div class="testimonial-role">Proprietária - Loja de Roupas</div>
-                </div>
-                <div class="testimonial-card">
-                    <p class="testimonial-text">"Sistema intuitivo e completo. Minha equipe aprendeu a usar em menos de 1 hora. Recomendo para qualquer negócio."</p>
-                    <div class="testimonial-author">João Santos</div>
-                    <div class="testimonial-role">Gerente - Supermercado</div>
-                </div>
-                <div class="testimonial-card">
-                    <p class="testimonial-text">"Melhor custo-benefício do mercado. Relatórios detalhados que me ajudam a tomar decisões estratégicas todos os dias."</p>
-                    <div class="testimonial-author">Ana Costa</div>
-                    <div class="testimonial-role">CEO - Rede de Farmácias</div>
-                </div>
-            </div>
+    <section id="Sistema" class="social-proof">
+    <div class="container">
+        <div class="section-title">
+            <h2>Conheça o Sistema por Dentro</h2>
+            <p>Veja algumas das principais telas do VendaFácil</p>
         </div>
-    </section>
 
+        <div class="system-gallery">
+
+            <div class="gallery-item">
+                <img src="assets/images/painel de vendas.png" alt="Painel">
+                <div class="gallery-info">
+                    <h3>Painel</h3>
+                    <p>Indicadores e resultados em tempo real.</p>
+                </div>
+            </div>
+
+            <div class="gallery-item">
+                <img src="assets/images/clientes.png" alt="Clientes">
+                <div class="gallery-info">
+                    <h3>Clientes</h3>
+                    <p>Cadastro completo e histórico de compras.</p>
+                </div>
+            </div>
+
+            <div class="gallery-item">
+                <img src="assets/images/produtos.png" alt="Produtos">
+                <div class="gallery-info">
+                    <h3>Produtos</h3>
+                    <p>Controle de estoque e gerenciamento simplificado.</p>
+                </div>
+            </div>
+
+            <div class="gallery-item">
+                <img src="assets/images/relatorios.png" alt="Relatórios">
+                <div class="gallery-info">
+                    <h3>Relatórios</h3>
+                    <p>Análises detalhadas para tomada de decisão.</p>
+                </div>
+            </div>
+
+            <div class="gallery-item">
+                <img src="assets/images/vendedores.png" alt="Vendedores">
+                <div class="gallery-info">
+                    <h3>Vendedores</h3>
+                    <p>Acompanhe metas, desempenho e produtividade.</p>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</section>
     <!-- Final CTA -->
     <section id="comecar" class="final-cta">
         <div class="container">
@@ -1436,7 +1444,7 @@ O Venda Fácil ajuda pequenas empresas a organizar vendas, clientes e relatório
                     <li><a href="#beneficios">Benefícios</a></li>
                     <li><a href="#como-funciona">Como Funciona</a></li>
                     <li><a href="#produto">Funcionalidades</a></li>
-                    <li><a href="#depoimentos">Depoimentos</a></li>
+                    <li><a href="#Sistema">Sistema</a></li>
                 </ul>
             </div>
             <div class="footer-section">
