@@ -611,10 +611,10 @@
         
         /* Footer */
        .footer {
-    background: #0f172a;
-    border-top: 1px solid rgba(255,255,255,0.08);
-    padding: 80px 20px 30px;
+    background: #07152d;
+    padding: 50px 20px 20px;
     text-align: center;
+    border-top: 1px solid rgba(255,255,255,0.08);
 }
 
 .footer-content {
@@ -623,66 +623,37 @@
 }
 
 .footer-logo {
-    height: 70px;
+    height: 80px;
     width: auto;
-    margin-bottom: 24px;
+    margin-bottom: 20px;
 }
 
 .footer-description {
-    color: #94a3b8;
+    color: #cbd5e1;
     font-size: 1rem;
-    line-height: 1.8;
-    margin-bottom: 30px;
+    line-height: 1.7;
+    max-width: 600px;
+    margin: 0 auto 25px;
 }
 
-.footer-btn {
-    display: inline-block;
-    padding: 14px 28px;
-    border-radius: 12px;
-    background: #2563eb;
-    color: #fff;
+.footer-social a {
+    color: #ffffff;
     text-decoration: none;
     font-weight: 600;
+    font-size: 16px;
     transition: 0.3s;
 }
 
-.footer-btn:hover {
-    transform: translateY(-2px);
-}
-
-.footer-bottom {
-    margin-top: 50px;
-    padding-top: 25px;
-    border-top: 1px solid rgba(255,255,255,0.08);
-
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 20px;
-
-    color: #94a3b8;
-    font-size: 14px;
-}
-
-.footer-bottom a {
-    color: #94a3b8;
-    text-decoration: none;
-}
-
-.footer-bottom a:hover {
+.footer-social a:hover {
     color: #3b82f6;
 }
 
-@media (max-width: 768px) {
-    .footer-bottom {
-        flex-direction: column;
-        gap: 12px;
-    }
-
-    .footer-logo {
-        height: 60px;
-    }
+.footer-bottom {
+    margin-top: 35px;
+    padding-top: 20px;
+    border-top: 1px solid rgba(255,255,255,0.08);
+    color: #94a3b8;
+    font-size: 14px;
 }
         
         /* Mobile Menu */
@@ -1462,46 +1433,39 @@ O Venda Fácil ajuda pequenas empresas a organizar vendas, clientes e relatório
     <!-- Footer -->
     <footer>
         <footer class="footer">
-    <div class="footer-container">
 
-        <div class="footer-column footer-brand">
-            <img
-                src="assets/logo-vendafacil.png"
-                alt="VendaFácil"
-                class="footer-logo"
-            >
+    <div class="footer-content">
 
-            <p>
-                Sistema completo para gestão de vendas, estoque,
-                clientes e relatórios. Tudo que sua empresa precisa
-                para vender mais e ter controle total do negócio.
-            </p>
+        <img
+            src="assets/logo-vendafacil.png"
+            alt="VendaFácil"
+            class="footer-logo"
+        >
 
-            <a href="#contato" class="footer-btn">
-                Solicitar Demonstração
-            </a>
-        </div>
+        <p class="footer-description">
+            Sistema completo para gestão de vendas, estoque, clientes e relatórios.
+            Tudo que sua empresa precisa para vender mais e ter controle total do negócio.
+        </p>
 
-        <div class="footer-column">
-            <h4>Instagram</h4>
-
+        <div class="footer-social">
             <a
                 href="https://instagram.com/seu_instagram"
                 target="_blank"
                 rel="noopener noreferrer"
             >
-                📷 @seu_instagram
+                📷 Instagram
             </a>
         </div>
 
     </div>
 
     <div class="footer-bottom">
-        <p>© 2026 VendaFácil. Todos os direitos reservados.</p>
-        <p>Desenvolvido por <strong>Flowly</strong></p>
+        © 2026 VendaFácil • Desenvolvido por <strong>Flowly</strong>
     </div>
 
-    </footer>
+</footer>
+
+    
 
     <!-- Modal de Contato -->
     <div id="contactModal" class="modal">
