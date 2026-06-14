@@ -60,15 +60,13 @@ export default function ProductLabel({
         className="label-product-name" 
         style={{ 
           color: '#000000', 
-          backgroundColor: '#f0f0f0',
-          fontSize: '11pt',
+          backgroundColor: 'transparent',
+          fontSize: '12pt',
           fontWeight: 'bold',
-          padding: '2mm',
+          padding: '1mm 2mm',
           textAlign: 'center',
-          minHeight: '8mm',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center'
+          lineHeight: '1.2',
+          marginBottom: '2mm'
         }}
       >
         {name || 'Produto sem nome'}
