@@ -34,11 +34,13 @@ export default function ProductLabel({
       try {
         JsBarcode(barcodeRef.current, barcodeValue, {
           format: 'CODE128',
-          width: 2,
-          height: 50,
+          width: 1.8,
+          height: 40,
           displayValue: true,
-          fontSize: 12,
-          margin: 5
+          fontSize: 10,
+          margin: 2,
+          marginTop: 2,
+          marginBottom: 2
         });
       } catch (error) {
         console.error('Erro ao gerar código de barras:', error);
@@ -56,20 +58,8 @@ export default function ProductLabel({
   return (
     <div className="product-label">
       {/* Nome do Produto */}
-      <div 
-        className="label-product-name" 
-        style={{ 
-          color: '#000000', 
-          backgroundColor: 'transparent',
-          fontSize: '12pt',
-          fontWeight: 'bold',
-          padding: '1mm 2mm',
-          textAlign: 'center',
-          lineHeight: '1.2',
-          marginBottom: '2mm'
-        }}
-      >
-        {name || 'Produto sem nome'}
+      <div className="label-product-name">
+        {name}
       </div>
       
       {/* Preço em destaque */}
@@ -91,7 +81,7 @@ export default function ProductLabel({
       <div className="label-footer">
         {sku && <div className="label-sku">SKU: {sku}</div>}
         {hasMissingBarcode && (
-          <div className="label-warning">⚠️ Código gerado automaticamente</div>
+          <div className="label-warning">⚠ Código gerado</div>
         )}
       </div>
     </div>
