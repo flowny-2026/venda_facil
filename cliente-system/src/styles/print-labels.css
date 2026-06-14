@@ -14,16 +14,18 @@
 }
 
 .label-product-name {
-  font-size: 9pt;
+  font-size: 11pt;
   font-weight: bold;
-  line-height: 1.2;
+  line-height: 1.3;
   overflow: hidden;
   text-overflow: ellipsis;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
-  max-height: 2.4em;
+  max-height: 2.6em;
   margin-bottom: 2mm;
+  color: #000;
+  text-align: center;
 }
 
 .label-price {
