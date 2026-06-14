@@ -96,6 +96,12 @@ export default function AdminClientes() {
 
       if (error) throw error;
 
+     console.log('Empresa criada:', data);
+
+    
+
+      
+
       setCompanies(prev => [data, ...prev]);
       setShowAddModal(false);
       setNewCompany({
@@ -104,6 +110,7 @@ export default function AdminClientes() {
         phone: '',
         document: '',
         plan: 'starter',
+        
         monthly_fee: 29.00
       });
 

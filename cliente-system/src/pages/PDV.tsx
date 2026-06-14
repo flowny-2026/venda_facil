@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+
 import { supabase } from '../lib/supabase';
 import { useUserRole } from '../hooks/useUserRole';
 import ReceiptModal from '../components/ReceiptModal';

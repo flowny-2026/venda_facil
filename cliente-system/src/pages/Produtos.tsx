@@ -1,3 +1,4 @@
+import CategoryManagerModal from '../components/CategoryManagerModal';
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
@@ -53,7 +54,7 @@ export default function Produtos() {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [newProduct, setNewProduct] = useState({
     name: '',
     description: '',
@@ -159,7 +160,7 @@ export default function Produtos() {
       const productData = {
         name: newProduct.name,
         description: newProduct.description || '',
-        barcode: newProduct.barcode || '',
+        barcode: newProduct.barcode || Date.now().toString(),
         sku: newProduct.sku || '',
         price: parseFloat(newProduct.price) || 0,
         cost_price: parseFloat(newProduct.cost_price) || 0,
@@ -470,15 +471,22 @@ export default function Produtos() {
         </div>
         
         <select
-          value={selectedCategory}
-          onChange={(e) => setSelectedCategory(e.target.value)}
-          className="bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-green-500/50"
-        >
-          <option value="all">Todas as categorias</option>
-          {categories.map(category => (
-            <option key={category.id} value={category.id}>{category.name}</option>
-          ))}
-        </select>
+        value={selectedCategory}
+        onChange={(e) => setSelectedCategory(e.target.value)}
+        className="bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-green-500/50"
+      >
+        <option value="all">Todas as categorias</option>
+        {categories.map(category => (
+          <option key={category.id} value={category.id}>{category.name}</option>
+        ))}
+      </select>
+      <button
+        onClick={() => setShowCategoryModal(true)}
+        className="flex items-center gap-2 px-3 py-2 bg-slate-800/50 border border-slate-700 text-slate-300 rounded-lg text-sm hover:border-slate-600 transition-colors whitespace-nowrap"
+      >
+        <Tag className="w-4 h-4" />
+        Categorias
+      </button>
       </div>
 
       {/* Lista de Produtos */}
@@ -665,14 +673,37 @@ export default function Produtos() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">Código de Barras</label>
-                  <input
-                    type="text"
-                    value={newProduct.barcode}
-                    onChange={(e) => setNewProduct({...newProduct, barcode: e.target.value})}
-                    autoFocus
-                    className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-green-500/50"
-                  />
+                  <label className="block text-sm font-medium text-slate-300 mb-2">
+  Código de Barras
+</label>
+
+<div className="flex gap-2">
+  <input
+    type="text"
+    value={newProduct.barcode}
+    onChange={(e) =>
+      setNewProduct({
+        ...newProduct,
+        barcode: e.target.value
+      })
+    }
+    autoFocus
+    className="flex-1 bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-green-500/50"
+  />
+
+  <button
+    type="button"
+    onClick={() =>
+      setNewProduct({
+        ...newProduct,
+        barcode: Date.now().toString()
+      })
+    }
+    className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg"
+  >
+    Gerar
+  </button>
+</div>
                 </div>
 
                 <div>
@@ -792,6 +823,16 @@ export default function Produtos() {
           </div>
         </div>
       )}
+      {companyId && user && (
+  <CategoryManagerModal
+    isOpen={showCategoryModal}
+    onClose={() => setShowCategoryModal(false)}
+    categories={categories}
+    companyId={companyId}
+    userId={user.id}
+    onCategoriesChange={loadCategories}
+  />
+)}
     </div>
   );
 }
