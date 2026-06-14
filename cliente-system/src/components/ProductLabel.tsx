@@ -54,7 +54,7 @@ export default function ProductLabel({
   return (
     <div className="product-label">
       {/* Nome do Produto */}
-      <div className="label-product-name">
+      <div className="label-product-name" style={{ color: '#000', backgroundColor: '#f0f0f0' }}>
         {name}
       </div>
       
