@@ -20,6 +20,8 @@ export default function ProductLabel({
 }: ProductLabelProps) {
   const barcodeRef = useRef<SVGSVGElement>(null);
   
+  console.log('ProductLabel recebeu:', { name, price, promotionalPrice, barcode, sku });
+  
   // Determinar preço a exibir
   const displayPrice = promotionalPrice || price;
   
@@ -54,8 +56,22 @@ export default function ProductLabel({
   return (
     <div className="product-label">
       {/* Nome do Produto */}
-      <div className="label-product-name" style={{ color: '#000', backgroundColor: '#f0f0f0' }}>
-        {name}
+      <div 
+        className="label-product-name" 
+        style={{ 
+          color: '#000000', 
+          backgroundColor: '#f0f0f0',
+          fontSize: '11pt',
+          fontWeight: 'bold',
+          padding: '2mm',
+          textAlign: 'center',
+          minHeight: '8mm',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
+        }}
+      >
+        {name || 'Produto sem nome'}
       </div>
       
       {/* Preço em destaque */}
