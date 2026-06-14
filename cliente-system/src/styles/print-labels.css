@@ -1,0 +1,152 @@
+/* Estilos para visualização na tela */
+.product-label {
+  width: 40mm;
+  height: 30mm;
+  background: white;
+  color: black;
+  padding: 3mm;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  font-family: Arial, sans-serif;
+  border: 1px solid #e5e7eb;
+  border-radius: 4px;
+}
+
+.label-product-name {
+  font-size: 9pt;
+  font-weight: bold;
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  max-height: 2.4em;
+  margin-bottom: 2mm;
+}
+
+.label-price {
+  font-size: 14pt;
+  font-weight: bold;
+  color: #000;
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  margin-bottom: 1mm;
+}
+
+.label-old-price {
+  font-size: 8pt;
+  color: #666;
+  text-decoration: line-through;
+  font-weight: normal;
+}
+
+.label-barcode {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 1mm 0;
+}
+
+.label-barcode svg {
+  max-width: 100%;
+  height: auto;
+}
+
+.label-footer {
+  font-size: 7pt;
+  color: #666;
+  text-align: center;
+}
+
+.label-sku {
+  margin-bottom: 1mm;
+}
+
+.label-warning {
+  font-size: 6pt;
+  color: #f59e0b;
+}
+
+/* Preview container */
+.label-preview-container {
+  transform: scale(1.5);
+  transform-origin: center;
+  padding: 20px;
+}
+
+/* Esconder elementos na impressão */
+@media print {
+  /* Ocultar tudo exceto a área de impressão */
+  body * {
+    visibility: hidden !important;
+  }
+  
+  .print-only,
+  .print-only * {
+    visibility: visible !important;
+  }
+  
+  .no-print {
+    display: none !important;
+  }
+  
+  /* Configurações da página */
+  @page {
+    size: 40mm 30mm;
+    margin: 0;
+  }
+  
+  body {
+    margin: 0;
+    padding: 0;
+  }
+  
+  /* Grid de etiquetas para impressão */
+  .labels-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 40mm);
+    gap: 2mm;
+    padding: 0;
+  }
+  
+  .label-wrapper {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+  
+  /* Ajustes na etiqueta para impressão */
+  .product-label {
+    width: 40mm;
+    height: 30mm;
+    background: white;
+    color: black;
+    padding: 3mm;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+  
+  .label-barcode svg {
+    max-width: 34mm;
+  }
+}
+
+/* Área de impressão (escondida na tela) */
+.print-only {
+  display: none;
+}
+
+@media print {
+  .print-only {
+    display: block !important;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+  }
+}

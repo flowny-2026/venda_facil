@@ -1,4 +1,6 @@
 import CategoryManagerModal from '../components/CategoryManagerModal';
+import LabelPrintModal from '../components/LabelPrintModal';
+import '../styles/print-labels.css';
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
@@ -14,7 +16,8 @@ import {
   CheckCircle,
   XCircle,
   AlertTriangle,
-  Search
+  Search,
+  Printer
 } from 'lucide-react';
 
 interface Product {
@@ -55,6 +58,8 @@ export default function Produtos() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [showCategoryModal, setShowCategoryModal] = useState(false);
+  const [showLabelModal, setShowLabelModal] = useState(false);
+  const [printingProduct, setPrintingProduct] = useState<Product | null>(null);
   const [newProduct, setNewProduct] = useState({
     name: '',
     description: '',
@@ -594,6 +599,16 @@ export default function Produtos() {
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-2">
                           <button
+                            onClick={() => {
+                              setPrintingProduct(product);
+                              setShowLabelModal(true);
+                            }}
+                            className="p-1 text-purple-400 hover:bg-purple-500/20 rounded"
+                            title="Imprimir Etiqueta"
+                          >
+                            <Printer className="w-4 h-4" />
+                          </button>
+                          <button
                             onClick={() => openEditModal(product)}
                             className="p-1 text-blue-400 hover:bg-blue-500/20 rounded"
                             title="Editar"
@@ -833,6 +848,18 @@ export default function Produtos() {
     onCategoriesChange={loadCategories}
   />
 )}
+
+      {/* Modal Impressão de Etiquetas */}
+      {printingProduct && (
+        <LabelPrintModal
+          isOpen={showLabelModal}
+          onClose={() => {
+            setShowLabelModal(false);
+            setPrintingProduct(null);
+          }}
+          product={printingProduct}
+        />
+      )}
     </div>
   );
 }
