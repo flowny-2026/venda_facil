@@ -4,6 +4,7 @@ import '../styles/print-labels.css';
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
+import ProductVariantsManager from '../components/ProductVariantsManager';
 import { 
   Plus, 
   Package, 
@@ -818,6 +819,19 @@ export default function Produtos() {
                   Controlar estoque deste produto
                 </label>
               </div>
+
+              {editingProduct && companyId && (
+                  <div className="border-t border-slate-700 pt-4">
+                    <label className="block text-sm font-medium text-slate-300 mb-3">
+                      📦 Variações de Estoque (Tamanho, Cor, etc.)
+                    </label>
+                    <ProductVariantsManager
+                      productId={editingProduct.id}
+                      companyId={companyId}
+                      basePrice={parseFloat(newProduct.price) || 0}
+                    />
+                  </div>
+                )}
 
               <div className="flex gap-3 pt-4">
                 <button
