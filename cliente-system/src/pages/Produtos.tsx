@@ -74,6 +74,13 @@ export default function Produtos() {
     category_id: '',
     track_stock: true
   });
+  const [pendingVariants, setPendingVariants] = useState<Array<{
+  attributes: Record<string, string>;
+  barcode: string;
+  stock_quantity: number;
+  price: number;
+}>>([]);
+const [newVariantRow, setNewVariantRow] = useState({ size: '', color: '', barcode: '', stock: 0 });
 
   // Buscar company_id do usuário logado
   useEffect(() => {
@@ -194,6 +201,23 @@ export default function Produtos() {
 
       console.log('Product created:', data);
       setProducts(prev => [data, ...prev]);
+      
+      // Salvar variações pendentes
+      if (pendingVariants.length > 0) {
+        const variantsToInsert = pendingVariants.map(v => ({
+          product_id: data.id,
+          company_id: companyId,
+          attributes: v.attributes,
+          barcode: v.barcode,
+          stock_quantity: v.stock_quantity,
+          price: v.price || parseFloat(newProduct.price) || 0,
+          active: true
+        }));
+        
+        await supabase.from('product_variants').insert(variantsToInsert);
+        setPendingVariants([]);
+      }
+      
       setShowAddModal(false);
       resetForm();
       alert('Produto cadastrado com sucesso!');
@@ -832,6 +856,104 @@ export default function Produtos() {
                     />
                   </div>
                 )}
+
+              {/* Variações */}
+              {!editingProduct && (
+                <div className="border-t border-slate-700 pt-4 space-y-3">
+                  <label className="block text-sm font-medium text-slate-300">📦 Tamanhos / Cores (opcional)</label>
+                  
+                  {/* Variações adicionadas */}
+                  {pendingVariants.length > 0 && (
+                    <div className="space-y-1">
+                      {pendingVariants.map((v, i) => (
+                        <div key={i} className="flex items-center justify-between bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-300">
+                          <span>
+                            {v.attributes.Tamanho && `Tam: ${v.attributes.Tamanho}`}
+                            {v.attributes.Tamanho && v.attributes.Cor && ' | '}
+                            {v.attributes.Cor && `Cor: ${v.attributes.Cor}`}
+                            {v.barcode && ` | Barcode: ${v.barcode}`}
+                            {` | Estoque: ${v.stock_quantity}`}
+                          </span>
+                          <button 
+                            type="button" 
+                            onClick={() => setPendingVariants(prev => prev.filter((_, idx) => idx !== i))} 
+                            className="text-red-400 hover:text-red-300 ml-2"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Adicionar variação */}
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-xs text-slate-400 mb-1">Tamanho</label>
+                      <input 
+                        type="text" 
+                        value={newVariantRow.size} 
+                        onChange={(e) => setNewVariantRow(prev => ({...prev, size: e.target.value}))}
+                        placeholder="Ex: P, M, G, 38..." 
+                        className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-green-500/50" 
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-slate-400 mb-1">Cor</label>
+                      <input 
+                        type="text" 
+                        value={newVariantRow.color} 
+                        onChange={(e) => setNewVariantRow(prev => ({...prev, color: e.target.value}))}
+                        placeholder="Ex: Azul, Preto..." 
+                        className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-green-500/50" 
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-slate-400 mb-1">Código de Barras</label>
+                      <input 
+                        type="text" 
+                        value={newVariantRow.barcode} 
+                        onChange={(e) => setNewVariantRow(prev => ({...prev, barcode: e.target.value}))}
+                        placeholder="Bipe ou digite..." 
+                        className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-green-500/50" 
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-slate-400 mb-1">Estoque</label>
+                      <input 
+                        type="number" 
+                        min="0" 
+                        value={newVariantRow.stock} 
+                        onChange={(e) => setNewVariantRow(prev => ({...prev, stock: parseInt(e.target.value) || 0}))}
+                        className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-green-500/50" 
+                      />
+                    </div>
+                  </div>
+
+                  <button 
+                    type="button"
+                    onClick={() => {
+                      if (!newVariantRow.size && !newVariantRow.color) { 
+                        alert('Informe pelo menos tamanho ou cor'); 
+                        return; 
+                      }
+                      setPendingVariants(prev => [...prev, {
+                        attributes: { 
+                          ...(newVariantRow.size && { Tamanho: newVariantRow.size }), 
+                          ...(newVariantRow.color && { Cor: newVariantRow.color }) 
+                        },
+                        barcode: newVariantRow.barcode,
+                        stock_quantity: newVariantRow.stock,
+                        price: parseFloat(newProduct.price) || 0
+                      }]);
+                      setNewVariantRow({ size: '', color: '', barcode: '', stock: 0 });
+                    }}
+                    className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-lg text-sm transition-colors"
+                  >
+                    + Adicionar Variação
+                  </button>
+                </div>
+              )}
 
               <div className="flex gap-3 pt-4">
                 <button
