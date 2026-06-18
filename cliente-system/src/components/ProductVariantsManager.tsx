@@ -1,4 +1,4 @@
-cat > /mnt/user-data/outputs/ProductVariantsManager.tsx << 'ENDOFFILE'
+
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { Plus, Trash2, Package, RefreshCw } from 'lucide-react';
@@ -318,5 +318,3 @@ export default function ProductVariantsManager({ productId, companyId, basePrice
     </div>
   );
 }
-ENDOFFILE
-echo "done"
