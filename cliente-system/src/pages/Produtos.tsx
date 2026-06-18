@@ -868,11 +868,9 @@ const [newVariantRow, setNewVariantRow] = useState({ size: '', color: '', barcod
                       {pendingVariants.map((v, i) => (
                         <div key={i} className="flex items-center justify-between bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-300">
                           <span>
-                            {v.attributes.Tamanho && `Tam: ${v.attributes.Tamanho}`}
+                            {v.attributes.Tamanho && `Tamanho: ${v.attributes.Tamanho}`}
                             {v.attributes.Tamanho && v.attributes.Cor && ' | '}
                             {v.attributes.Cor && `Cor: ${v.attributes.Cor}`}
-                            {v.barcode && ` | Barcode: ${v.barcode}`}
-                            {` | Estoque: ${v.stock_quantity}`}
                           </span>
                           <button 
                             type="button" 
@@ -908,26 +906,6 @@ const [newVariantRow, setNewVariantRow] = useState({ size: '', color: '', barcod
                         className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-green-500/50" 
                       />
                     </div>
-                    <div>
-                      <label className="block text-xs text-slate-400 mb-1">Código de Barras</label>
-                      <input 
-                        type="text" 
-                        value={newVariantRow.barcode} 
-                        onChange={(e) => setNewVariantRow(prev => ({...prev, barcode: e.target.value}))}
-                        placeholder="Bipe ou digite..." 
-                        className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-green-500/50" 
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs text-slate-400 mb-1">Estoque</label>
-                      <input 
-                        type="number" 
-                        min="0" 
-                        value={newVariantRow.stock} 
-                        onChange={(e) => setNewVariantRow(prev => ({...prev, stock: parseInt(e.target.value) || 0}))}
-                        className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-green-500/50" 
-                      />
-                    </div>
                   </div>
 
                   <button 
@@ -942,8 +920,8 @@ const [newVariantRow, setNewVariantRow] = useState({ size: '', color: '', barcod
                           ...(newVariantRow.size && { Tamanho: newVariantRow.size }), 
                           ...(newVariantRow.color && { Cor: newVariantRow.color }) 
                         },
-                        barcode: newVariantRow.barcode,
-                        stock_quantity: newVariantRow.stock,
+                        barcode: '',
+                        stock_quantity: 0,
                         price: parseFloat(newProduct.price) || 0
                       }]);
                       setNewVariantRow({ size: '', color: '', barcode: '', stock: 0 });

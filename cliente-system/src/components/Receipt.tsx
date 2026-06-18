@@ -9,6 +9,8 @@ export interface ReceiptItem {
   quantity: number;
   unit_price: number;
   total_price: number;
+  variant_size?: string;
+  variant_color?: string;
 }
 
 export interface ReceiptCompany {
@@ -180,7 +182,19 @@ export const generateReceiptPDF = (
 
   sale.items.forEach((item) => {
     const maxWidth = size === '80mm' ? 35 : 25;
-    const productLines = doc.splitTextToSize(item.product_name, maxWidth);
+    
+    // Nome do produto
+    let productName = item.product_name;
+    
+    // Adicionar tamanho e cor se existirem
+    if (item.variant_size || item.variant_color) {
+      const variants = [];
+      if (item.variant_size) variants.push(`Tam: ${item.variant_size}`);
+      if (item.variant_color) variants.push(`Cor: ${item.variant_color}`);
+      productName += ` (${variants.join(', ')})`;
+    }
+    
+    const productLines = doc.splitTextToSize(productName, maxWidth);
     
     productLines.forEach((line: string, index: number) => {
       doc.text(line, margin, y);
@@ -301,9 +315,16 @@ Data: ${new Date(sale.created_at).toLocaleString('pt-BR')}
 Vendedor: ${sale.seller_name}
 
 *PRODUTOS:*
-${sale.items.map(item => 
-  `${item.product_name}\n${item.quantity}x R$ ${item.unit_price.toFixed(2)} = R$ ${item.total_price.toFixed(2)}`
-).join('\n\n')}
+${sale.items.map(item => {
+  let productName = item.product_name;
+  if (item.variant_size || item.variant_color) {
+    const variants = [];
+    if (item.variant_size) variants.push(`Tam: ${item.variant_size}`);
+    if (item.variant_color) variants.push(`Cor: ${item.variant_color}`);
+    productName += ` (${variants.join(', ')})`;
+  }
+  return `${productName}\n${item.quantity}x R$ ${item.unit_price.toFixed(2)} = R$ ${item.total_price.toFixed(2)}`;
+}).join('\n\n')}
 
 *TOTAIS:*
 Subtotal: R$ ${sale.subtotal.toFixed(2)}

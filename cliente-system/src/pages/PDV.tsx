@@ -54,6 +54,8 @@ interface CartItem {
   quantity: number;
   unit_price: number;
   total_price: number;
+  variant_size?: string;
+  variant_color?: string;
 }
 
 export default function PDV() {
@@ -165,9 +167,31 @@ export default function PDV() {
     }
   };
 
-  const addToCart = (product: Product) => {
+  const addToCart = async (product: Product) => {
     const existingItem = cart.find(item => item.product.id === product.id);
     const price = product.promotional_price || product.price;
+    
+    // Buscar variantes do produto
+    let variantSize: string | undefined;
+    let variantColor: string | undefined;
+    
+    try {
+      const { data: variants, error } = await supabase
+        .from('product_variants')
+        .select('attributes')
+        .eq('product_id', product.id)
+        .eq('active', true)
+        .limit(1)
+        .single();
+      
+      if (!error && variants && variants.attributes) {
+        variantSize = variants.attributes.Tamanho;
+        variantColor = variants.attributes.Cor;
+      }
+    } catch (error) {
+      // Se não houver variantes, continua sem elas
+      console.log('Produto sem variantes');
+    }
     
     if (existingItem) {
       // Verificar estoque se controlado
@@ -198,7 +222,9 @@ export default function PDV() {
         product,
         quantity: 1,
         unit_price: price,
-        total_price: price
+        total_price: price,
+        variant_size: variantSize,
+        variant_color: variantColor
       }]);
     }
   };
@@ -376,7 +402,9 @@ export default function PDV() {
           product_name: item.product.name,
           quantity: item.quantity,
           unit_price: item.unit_price,
-          total_price: item.total_price
+          total_price: item.total_price,
+          variant_size: item.variant_size,
+          variant_color: item.variant_color
         }))
       };
 
@@ -575,9 +603,19 @@ export default function PDV() {
               cart.map((item) => (
                 <div key={item.product.id} className="p-4 border-b border-slate-800 last:border-b-0">
                   <div className="flex items-start justify-between mb-2">
-                    <h4 className="text-sm font-medium text-slate-200 flex-1">
-                      {item.product.name}
-                    </h4>
+                    <div className="flex-1">
+                      <h4 className="text-sm font-medium text-slate-200">
+                        {item.product.name}
+                      </h4>
+                      {(item.variant_size || item.variant_color) && (
+                        <p className="text-xs text-slate-400 mt-1">
+                          {[
+                            item.variant_size && `Tam: ${item.variant_size}`,
+                            item.variant_color && `Cor: ${item.variant_color}`
+                          ].filter(Boolean).join(' | ')}
+                        </p>
+                      )}
+                    </div>
                     <button
                       onClick={() => removeFromCart(item.product.id)}
                       className="text-red-400 hover:text-red-300 ml-2"

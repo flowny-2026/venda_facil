@@ -67,7 +67,19 @@ export default function ReceiptModal({ isOpen, onClose, sale, company }: Receipt
             <div className="space-y-2">
               {sale.items.map((item, index) => (
                 <div key={index} className="text-xs">
-                  <p className="font-medium">{item.product_name}</p>
+                  <p className="font-medium">
+                    {item.product_name}
+                    {(item.variant_size || item.variant_color) && (
+                      <span className="text-gray-600">
+                        {' '}(
+                        {[
+                          item.variant_size && `Tam: ${item.variant_size}`,
+                          item.variant_color && `Cor: ${item.variant_color}`
+                        ].filter(Boolean).join(', ')}
+                        )
+                      </span>
+                    )}
+                  </p>
                   <div className="flex justify-between text-gray-600">
                     <span>{item.quantity}x {formatCurrency(item.unit_price)}</span>
                     <span>{formatCurrency(item.total_price)}</span>
