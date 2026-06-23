@@ -54,7 +54,7 @@ export default function Dashboard() {
     category: "all",
     query: "",
   });
-
+  const [profitData, setProfitData] = useState({ revenue: 0, cost: 0, profit: 0 });
   const [orders, setOrders] = useState<OrderRow[]>([]);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
@@ -148,6 +148,26 @@ export default function Dashboard() {
         console.log('✅ Dados carregados do LocalStorage:', localOrders.length, 'vendas');
         setOrders(localOrders);
       }
+      // Calcular lucro real
+const paidSaleIds = (salesData || [])
+  .filter(s => s.status === 'paid')
+  .map(s => s.id);
+
+if (paidSaleIds.length > 0) {
+  const { data: items } = await supabase
+    .from('sale_items')
+    .select('quantity, unit_price, total_price, products(cost_price)')
+    .in('sale_id', paidSaleIds);
+
+  if (items) {
+    const totalRevenue = items.reduce((sum: number, item: any) => sum + (item.total_price || 0), 0);
+    const totalCost = items.reduce((sum: number, item: any) => {
+      const cost = item.products?.cost_price || 0;
+      return sum + (cost * item.quantity);
+    }, 0);
+    setProfitData({ revenue: totalRevenue, cost: totalCost, profit: totalRevenue - totalCost });
+  }
+}
     } catch (error) {
       console.error('❌ Erro ao carregar dados:', error);
       // Em caso de erro, tentar LocalStorage como fallback
@@ -404,6 +424,90 @@ export default function Dashboard() {
           hint="Pedidos pagos / total"
         />
       </div>
+      {/* Análise de Lucro */}
+{profitData.revenue > 0 && (
+  <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-6">
+    <div className="flex items-center justify-between mb-6">
+      <div>
+        <h3 className="text-base font-semibold text-slate-100">Análise de Lucro</h3>
+        <p className="text-xs text-slate-400 mt-0.5">Baseado nas vendas pagas do período</p>
+      </div>
+      <div className={`px-3 py-1 rounded-full text-sm font-semibold ${
+        profitData.profit >= 0 
+          ? 'bg-green-500/15 text-green-400 border border-green-500/30' 
+          : 'bg-red-500/15 text-red-400 border border-red-500/30'
+      }`}>
+        {profitData.profit >= 0 ? '▲' : '▼'} {profitData.revenue > 0 ? ((profitData.profit / profitData.revenue) * 100).toFixed(1) : 0}% margem
+      </div>
+    </div>
+
+    <div className="grid grid-cols-3 gap-6 mb-6">
+      {/* Receita */}
+      <div className="bg-blue-500/5 border border-blue-500/20 rounded-xl p-4">
+        <div className="flex items-center gap-2 mb-2">
+          <div className="w-2 h-2 rounded-full bg-blue-400"></div>
+          <span className="text-xs font-medium text-slate-400 uppercase tracking-wide">Receita</span>
+        </div>
+        <div className="text-xl font-bold text-blue-400">
+          {profitData.revenue.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+        </div>
+        <div className="text-xs text-slate-500 mt-1">Total vendido</div>
+      </div>
+
+      {/* Custo */}
+      <div className="bg-red-500/5 border border-red-500/20 rounded-xl p-4">
+        <div className="flex items-center gap-2 mb-2">
+          <div className="w-2 h-2 rounded-full bg-red-400"></div>
+          <span className="text-xs font-medium text-slate-400 uppercase tracking-wide">Custo</span>
+        </div>
+        <div className="text-xl font-bold text-red-400">
+          {profitData.cost.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+        </div>
+        <div className="text-xs text-slate-500 mt-1">Custo dos produtos</div>
+      </div>
+
+      {/* Lucro */}
+      <div className={`${profitData.profit >= 0 ? 'bg-green-500/5 border-green-500/20' : 'bg-red-500/5 border-red-500/20'} border rounded-xl p-4`}>
+        <div className="flex items-center gap-2 mb-2">
+          <div className={`w-2 h-2 rounded-full ${profitData.profit >= 0 ? 'bg-green-400' : 'bg-red-400'}`}></div>
+          <span className="text-xs font-medium text-slate-400 uppercase tracking-wide">Lucro</span>
+        </div>
+        <div className={`text-xl font-bold ${profitData.profit >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+          {profitData.profit.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+        </div>
+        <div className="text-xs text-slate-500 mt-1">Receita − Custo</div>
+      </div>
+    </div>
+
+    {/* Barra de progresso */}
+    <div>
+      <div className="flex justify-between text-xs text-slate-400 mb-2">
+        <span>Custo ({profitData.revenue > 0 ? ((profitData.cost / profitData.revenue) * 100).toFixed(1) : 0}%)</span>
+        <span>Lucro ({profitData.revenue > 0 ? ((profitData.profit / profitData.revenue) * 100).toFixed(1) : 0}%)</span>
+      </div>
+      <div className="h-3 bg-slate-800 rounded-full overflow-hidden flex">
+        <div 
+          className="h-full bg-red-500/70 transition-all duration-500"
+          style={{ width: `${profitData.revenue > 0 ? Math.min((profitData.cost / profitData.revenue) * 100, 100) : 0}%` }}
+        />
+        <div 
+          className="h-full bg-green-500/70 transition-all duration-500"
+          style={{ width: `${profitData.revenue > 0 ? Math.max((profitData.profit / profitData.revenue) * 100, 0) : 0}%` }}
+        />
+      </div>
+      <div className="flex items-center gap-4 mt-2">
+        <div className="flex items-center gap-1.5">
+          <div className="w-2.5 h-2.5 rounded-full bg-red-500/70"></div>
+          <span className="text-xs text-slate-500">Custo</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <div className="w-2.5 h-2.5 rounded-full bg-green-500/70"></div>
+          <span className="text-xs text-slate-500">Lucro</span>
+        </div>
+      </div>
+    </div>
+  </div>
+)}
 
       {/* Gráficos */}
       <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">

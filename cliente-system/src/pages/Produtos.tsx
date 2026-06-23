@@ -818,27 +818,19 @@ const [newVariantRow, setNewVariantRow] = useState({ size: '', color: '', barcod
                 </div>
                 {/* Cálculo de Lucro */}
                 {newProduct.price && newProduct.cost_price && parseFloat(newProduct.cost_price) > 0 && (
-                  <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-3">
-                    <div className="grid grid-cols-3 gap-3 text-center">
-                      <div>
-                        <div className="text-xs text-slate-400 mb-1">Lucro por unidade</div>
-                        <div className="text-sm font-bold text-green-400">
-                          {formatCurrency((parseFloat(newProduct.promotional_price) || parseFloat(newProduct.price)) - parseFloat(newProduct.cost_price))}
-                        </div>
-                      </div>
-                      <div>
-                        <div className="text-xs text-slate-400 mb-1">Margem</div>
-                        <div className="text-sm font-bold text-blue-400">
-                          {((((parseFloat(newProduct.promotional_price) || parseFloat(newProduct.price)) - parseFloat(newProduct.cost_price)) / (parseFloat(newProduct.promotional_price) || parseFloat(newProduct.price))) * 100).toFixed(1)}%
-                        </div>
-                      </div>
-                      <div>
-                        <div className="text-xs text-slate-400 mb-1">Markup</div>
-                        <div className="text-sm font-bold text-amber-400">
-                          {((((parseFloat(newProduct.promotional_price) || parseFloat(newProduct.price)) - parseFloat(newProduct.cost_price)) / parseFloat(newProduct.cost_price)) * 100).toFixed(1)}%
-                        </div>
-                      </div>
-                    </div>
+                  <div className="flex items-center gap-4 text-sm px-1">
+                    <span className="text-slate-400">Lucro:</span>
+                    <span className="text-green-400 font-medium">
+                      {formatCurrency((parseFloat(newProduct.promotional_price) || parseFloat(newProduct.price)) - parseFloat(newProduct.cost_price))}
+                    </span>
+                    <span className="text-slate-400">Margem:</span>
+                    <span className="text-blue-400 font-medium">
+                      {((((parseFloat(newProduct.promotional_price) || parseFloat(newProduct.price)) - parseFloat(newProduct.cost_price)) / (parseFloat(newProduct.promotional_price) || parseFloat(newProduct.price))) * 100).toFixed(1)}%
+                    </span>
+                    <span className="text-slate-400">Markup:</span>
+                    <span className="text-amber-400 font-medium">
+                      {((((parseFloat(newProduct.promotional_price) || parseFloat(newProduct.price)) - parseFloat(newProduct.cost_price)) / parseFloat(newProduct.cost_price)) * 100).toFixed(1)}%
+                    </span>
                   </div>
                 )}
               </div>
