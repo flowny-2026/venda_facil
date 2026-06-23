@@ -559,6 +559,7 @@ const [newVariantRow, setNewVariantRow] = useState({ size: '', color: '', barcod
                   <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase">Produto</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase">Categoria</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase">Preço</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase">Lucro</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase">Estoque</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase">Status</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase">Ações</th>
@@ -569,6 +570,20 @@ const [newVariantRow, setNewVariantRow] = useState({ size: '', color: '', barcod
                   const stockStatus = getStockStatus(product);
                   return (
                     <tr key={product.id} className="hover:bg-slate-800/30">
+                      <td className="px-6 py-4">
+                      {product.cost_price > 0 ? (
+                        <div>
+                          <div className="text-sm font-medium text-green-400">
+                            {formatCurrency((product.promotional_price || product.price) - product.cost_price)}
+                          </div>
+                          <div className="text-xs text-slate-400">
+                            {((((product.promotional_price || product.price) - product.cost_price) / (product.promotional_price || product.price)) * 100).toFixed(1)}% margem
+                          </div>
+                        </div>
+                      ) : (
+                        <span className="text-xs text-slate-500">Sem custo</span>
+                      )}
+                    </td>
                       <td className="px-6 py-4">
                         <div>
                           <div className="text-sm font-medium text-slate-200">{product.name}</div>
@@ -801,6 +816,31 @@ const [newVariantRow, setNewVariantRow] = useState({ size: '', color: '', barcod
                     className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-green-500/50"
                   />
                 </div>
+                {/* Cálculo de Lucro */}
+                {newProduct.price && newProduct.cost_price && parseFloat(newProduct.cost_price) > 0 && (
+                  <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-3">
+                    <div className="grid grid-cols-3 gap-3 text-center">
+                      <div>
+                        <div className="text-xs text-slate-400 mb-1">Lucro por unidade</div>
+                        <div className="text-sm font-bold text-green-400">
+                          {formatCurrency((parseFloat(newProduct.promotional_price) || parseFloat(newProduct.price)) - parseFloat(newProduct.cost_price))}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-xs text-slate-400 mb-1">Margem</div>
+                        <div className="text-sm font-bold text-blue-400">
+                          {((((parseFloat(newProduct.promotional_price) || parseFloat(newProduct.price)) - parseFloat(newProduct.cost_price)) / (parseFloat(newProduct.promotional_price) || parseFloat(newProduct.price))) * 100).toFixed(1)}%
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-xs text-slate-400 mb-1">Markup</div>
+                        <div className="text-sm font-bold text-amber-400">
+                          {((((parseFloat(newProduct.promotional_price) || parseFloat(newProduct.price)) - parseFloat(newProduct.cost_price)) / parseFloat(newProduct.cost_price)) * 100).toFixed(1)}%
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
