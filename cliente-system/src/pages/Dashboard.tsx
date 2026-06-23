@@ -140,15 +140,7 @@ export default function Dashboard() {
           }));
           
           setOrders(convertedOrders);
-        }
-      } else {
-        console.log('💾 Carregando dados do LocalStorage...');
-        // Usar LocalStorage apenas se Supabase não estiver configurado
-        const localOrders = SalesService.loadSales();
-        console.log('✅ Dados carregados do LocalStorage:', localOrders.length, 'vendas');
-        setOrders(localOrders);
-      }
-      // Calcular lucro real
+          // Calcular lucro real
 const paidSaleIds = (salesData || [])
   .filter(s => s.status === 'paid')
   .map(s => s.id);
@@ -168,6 +160,14 @@ if (paidSaleIds.length > 0) {
     setProfitData({ revenue: totalRevenue, cost: totalCost, profit: totalRevenue - totalCost });
   }
 }
+        }
+      } else {
+        console.log('💾 Carregando dados do LocalStorage...');
+        // Usar LocalStorage apenas se Supabase não estiver configurado
+        const localOrders = SalesService.loadSales();
+        console.log('✅ Dados carregados do LocalStorage:', localOrders.length, 'vendas');
+        setOrders(localOrders);
+      }
     } catch (error) {
       console.error('❌ Erro ao carregar dados:', error);
       // Em caso de erro, tentar LocalStorage como fallback
@@ -424,6 +424,7 @@ if (paidSaleIds.length > 0) {
           hint="Pedidos pagos / total"
         />
       </div>
+
       {/* Análise de Lucro */}
 {profitData.revenue > 0 && (
   <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-6">
