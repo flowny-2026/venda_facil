@@ -300,8 +300,8 @@ setCurrentPaymentAmount('');
     return { subtotal, discount, total, change };
   };
   const totalPaid = payments.reduce((sum, p) => sum + (parseFloat(p.amount as string) || 0), 0);
-const remaining = total - totalPaid;
-
+const { total: currentTotal } = calculateTotals();
+const remaining = currentTotal - totalPaid;
 const addPayment = () => {
   if (!currentPaymentMethod) { alert('Selecione a forma de pagamento'); return; }
   if (!currentPaymentAmount || parseFloat(currentPaymentAmount) <= 0) { alert('Informe o valor'); return; }
@@ -433,12 +433,9 @@ if (payments.length > 1) {
         receipt_number: sale.receipt_number || `TEMP-${Date.now()}`,
         created_at: sale.created_at || new Date().toISOString(),
         seller_name: seller?.name || 'Não informado',
-        payment_method_name: paymentMethod?.name || 'Não informado',
-        subtotal,
-        discount,
-        total_amount: total,
-        payment_received: parseFloat(paymentReceived) || 0,
-        change_amount: Math.max(0, change),
+        payment_method_name: payments.map(p => `${p.payment_method_name} (${formatCurrency(parseFloat(p.amount as string))})`).join(' + '),
+          payment_received: totalPaid,
+          change_amount: Math.max(0, totalPaid - total),
         items: cart.map(item => ({
           product_name: item.product.name,
           quantity: item.quantity,
