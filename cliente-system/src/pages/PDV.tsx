@@ -76,6 +76,15 @@ export default function PDV() {
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
   
+  // Pagamentos múltiplos
+const [payments, setPayments] = useState<Array<{
+  payment_method_id: string;
+  payment_method_name: string;
+  amount: number | string;
+}>>([]);
+const [currentPaymentMethod, setCurrentPaymentMethod] = useState('');
+const [currentPaymentAmount, setCurrentPaymentAmount] = useState<any>('');
+
   // Estados para impressão de cupom
   const [lastSale, setLastSale] = useState<ReceiptSale | null>(null);
   const [showReceiptModal, setShowReceiptModal] = useState(false);
@@ -268,6 +277,9 @@ export default function PDV() {
     setDiscountAmount('');
     setPaymentReceived('');
     setSearchTerm('');
+    setPayments([]);
+setCurrentPaymentMethod('');
+setCurrentPaymentAmount('');
   };
 
   const calculateTotals = () => {
@@ -287,34 +299,50 @@ export default function PDV() {
     
     return { subtotal, discount, total, change };
   };
+  const totalPaid = payments.reduce((sum, p) => sum + (parseFloat(p.amount as string) || 0), 0);
+const remaining = total - totalPaid;
+
+const addPayment = () => {
+  if (!currentPaymentMethod) { alert('Selecione a forma de pagamento'); return; }
+  if (!currentPaymentAmount || parseFloat(currentPaymentAmount) <= 0) { alert('Informe o valor'); return; }
+  const method = paymentMethods.find(m => m.id === currentPaymentMethod);
+  if (!method) return;
+  setPayments(prev => [...prev, {
+    payment_method_id: currentPaymentMethod,
+    payment_method_name: method.name,
+    amount: parseFloat(currentPaymentAmount)
+  }]);
+  setCurrentPaymentMethod('');
+  setCurrentPaymentAmount('');
+};
+
+const removePayment = (index: number) => {
+  setPayments(prev => prev.filter((_, i) => i !== index));
+};
 
   const processSale = async () => {
     if (cart.length === 0) {
       alert('Adicione produtos ao carrinho!');
       return;
     }
-
     if (!selectedSeller) {
       alert('Selecione um vendedor!');
       return;
     }
-
-    if (!selectedPaymentMethod) {
-      alert('Selecione uma forma de pagamento!');
+    if (payments.length === 0) {
+      alert('Adicione pelo menos uma forma de pagamento!');
       return;
     }
-
-    const { subtotal, discount, total, change } = calculateTotals();
-    
-    if (parseFloat(paymentReceived) < total) {
-      alert('Valor recebido é menor que o total da venda!');
+    const { total } = calculateTotals();
+    if (totalPaid < total) {
+      alert(`Falta ${formatCurrency(total - totalPaid)} para completar o pagamento!`);
       return;
     }
-
     // Abrir modal para vincular cliente
     setShowCustomerModal(true);
   };
 
+    
   const finalizeSale = async (customerId: string | null) => {
     const { subtotal, discount, total, change } = calculateTotals();
     setProcessing(true);
@@ -334,19 +362,20 @@ export default function PDV() {
       if (!companyUser) throw new Error('Empresa não encontrada');
 
       // Insere a venda
+      const mainPayment = payments[0];
       const { data: sale, error: saleError } = await supabase
         .from('sales')
         .insert([{
           company_id: companyUser.company_id,
           user_id: user.id,
           seller_id: selectedSeller,
-          payment_method_id: selectedPaymentMethod,
-          customer_id: customerId, // Vincular cliente à venda
+          payment_method_id: mainPayment.payment_method_id,
+          customer_id: customerId,
           subtotal: subtotal,
           discount_amount: discount,
           total_amount: total,
-          payment_received: parseFloat(paymentReceived),
-          change_amount: Math.max(0, change),
+          payment_received: totalPaid,
+          change_amount: Math.max(0, totalPaid - total),
           status: 'paid'
         }])
         .select()
@@ -364,6 +393,18 @@ export default function PDV() {
         unit_price: item.unit_price,
         total_price: item.total_price
       }));
+      // Salvar pagamentos múltiplos
+if (payments.length > 1) {
+  await supabase.from('sale_payments').insert(
+    payments.map(p => ({
+      sale_id: sale.id,
+      company_id: companyUser.company_id,
+      payment_method_id: p.payment_method_id,
+      payment_method_name: p.payment_method_name,
+      amount: parseFloat(p.amount as string)
+    }))
+  );
+}
 
       const { error: itemsError } = await supabase
         .from('sale_items')
@@ -687,46 +728,80 @@ export default function PDV() {
           </div>
         )}
 
-        {/* Forma de Pagamento */}
-        {cart.length > 0 && (
-          <div className="bg-slate-900/50 border border-slate-800 rounded-lg p-4">
-            <label className="block text-sm font-medium text-slate-300 mb-2">
-              <CreditCard className="w-4 h-4 inline mr-2" />
-              Forma de Pagamento
-            </label>
-            <select
-              value={selectedPaymentMethod}
-              onChange={(e) => setSelectedPaymentMethod(e.target.value)}
-              className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
-            >
-              <option value="">Selecione a forma de pagamento</option>
-              {paymentMethods.map(method => (
-                <option key={method.id} value={method.id}>
-                  {method.name}
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
+        {/* Pagamentos Múltiplos */}
+{cart.length > 0 && (
+  <div className="bg-slate-900/50 border border-slate-800 rounded-lg p-4 space-y-3">
+    <label className="block text-sm font-medium text-slate-300">
+      <CreditCard className="w-4 h-4 inline mr-2" />
+      Formas de Pagamento
+    </label>
 
-        {/* Valor Recebido */}
-        {cart.length > 0 && (
-          <div className="bg-slate-900/50 border border-slate-800 rounded-lg p-4">
-            <label className="block text-sm font-medium text-slate-300 mb-2">
-              <DollarSign className="w-4 h-4 inline mr-2" />
-              Valor Recebido
-            </label>
-            <input
-              type="number"
-              step="0.01"
-              min="0"
-              value={paymentReceived}
-              onChange={(e) => setPaymentReceived(e.target.value)}
-              className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
-              placeholder="0,00"
-            />
+    {/* Pagamentos adicionados */}
+    {payments.length > 0 && (
+      <div className="space-y-1">
+        {payments.map((p, i) => (
+          <div key={i} className="flex items-center justify-between bg-slate-800/50 rounded-lg px-3 py-2">
+            <div className="text-sm text-slate-200">
+              {p.payment_method_name}
+              <span className="text-green-400 ml-2 font-medium">{formatCurrency(parseFloat(p.amount as string))}</span>
+            </div>
+            <button onClick={() => removePayment(i)} className="text-red-400 hover:text-red-300 ml-2">
+              <Trash2 className="w-3 h-3" />
+            </button>
           </div>
-        )}
+        ))}
+        <div className="flex justify-between text-xs pt-1">
+          <span className="text-slate-400">Total pago: <span className="text-green-400 font-medium">{formatCurrency(totalPaid)}</span></span>
+          {remaining > 0 && <span className="text-amber-400 font-medium">Falta: {formatCurrency(remaining)}</span>}
+          {remaining < 0 && <span className="text-blue-400 font-medium">Troco: {formatCurrency(Math.abs(remaining))}</span>}
+        </div>
+      </div>
+    )}
+
+    {/* Adicionar pagamento */}
+    {remaining > 0 || payments.length === 0 ? (
+      <div className="space-y-2">
+        <select
+          value={currentPaymentMethod}
+          onChange={(e) => setCurrentPaymentMethod(e.target.value)}
+          className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+        >
+          <option value="">Selecione a forma de pagamento</option>
+          {paymentMethods.map(method => (
+            <option key={method.id} value={method.id}>{method.name}</option>
+          ))}
+        </select>
+        <div className="flex gap-2">
+          <input
+            type="number"
+            step="0.01"
+            min="0"
+            value={currentPaymentAmount}
+            onChange={(e) => setCurrentPaymentAmount(e.target.value)}
+            placeholder={remaining > 0 ? formatCurrency(remaining) : '0,00'}
+            className="flex-1 bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+          />
+          <button
+            type="button"
+            onClick={() => setCurrentPaymentAmount(remaining.toFixed(2))}
+            className="px-3 py-2 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-lg text-xs whitespace-nowrap"
+          >
+            Resto
+          </button>
+          <button
+            type="button"
+            onClick={addPayment}
+            className="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs"
+          >
+            + Add
+          </button>
+        </div>
+      </div>
+    ) : null}
+  </div>
+)}
+       
+      
 
         {/* Totais */}
         {cart.length > 0 && (
@@ -765,7 +840,7 @@ export default function PDV() {
         {cart.length > 0 && (
           <button
             onClick={processSale}
-            disabled={processing || !selectedSeller || !selectedPaymentMethod || paymentReceived < total}
+            disabled={processing || !selectedSeller || payments.length === 0}
             className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-green-600 hover:bg-green-700 disabled:bg-slate-600 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors"
           >
             {processing ? (
