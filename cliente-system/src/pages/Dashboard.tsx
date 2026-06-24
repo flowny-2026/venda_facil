@@ -28,9 +28,7 @@ function filterOrders(orders: OrderRow[], filters: Filters): OrderRow[] {
     // Filtro por status
     if (filters.status !== "all" && order.status !== filters.status) return false;
 
-    // Filtro por categoria
-    if (filters.category !== "all" && order.category !== filters.category) return false;
-
+    
     // Filtro por busca
     if (filters.query.trim()) {
       const query = filters.query.toLowerCase();
@@ -51,7 +49,6 @@ export default function Dashboard() {
   const [filters, setFilters] = useState<Filters>({
     period: "30d",
     status: "all",
-    category: "all",
     query: "",
   });
   const [profitData, setProfitData] = useState({ revenue: 0, cost: 0, profit: 0 });
