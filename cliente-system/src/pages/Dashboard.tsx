@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
-import { Plus, RefreshCw, LogOut, User } from "lucide-react";
+import { RefreshCw, LogOut, User } from "lucide-react";
 import FiltersBar, { Filters } from "../components/FiltersBar";
 import KpiCard from "../components/KpiCard";
 import LineChartCard from "../components/charts/LineChartCard";
@@ -8,7 +8,7 @@ import DonutChartCard from "../components/charts/DonutChartCard";
 import DataTable from "../components/DataTable";
 import AddSaleModal from "../components/AddSaleModal";
 import AuthModal from "../components/AuthModal";
-import { OrderRow, MOCK_ORDERS } from "../data/mock";
+import { OrderRow } from "../data/mock";
 import { SalesService } from "../services/salesService";
 import { SupabaseService } from "../services/supabaseService";
 import { useAuth } from "../hooks/useAuth";
@@ -346,20 +346,7 @@ if (paidSaleIds.length > 0) {
 
   return (
     <div className="space-y-6">
-      {/* Debug Info - Remover depois */}
-      {isSeller && (
-        <div className="bg-blue-900/20 border border-blue-500/30 rounded-lg p-4">
-          <h3 className="text-sm font-semibold text-blue-400 mb-2">🔍 Modo Vendedor Ativo</h3>
-          <div className="text-xs text-slate-300 space-y-1">
-            <p>• Vendedor: {permissions?.sellerName || 'Carregando...'}</p>
-            <p>• Seller ID: {permissions?.sellerId || 'Não definido'}</p>
-            <p>• Empresa: {permissions?.companyName || 'Carregando...'}</p>
-            <p>• Vendas exibidas: {orders.length}</p>
-            <p>• Pode ver lucros: {permissions?.canViewCompanyProfits ? 'Sim' : 'Não'}</p>
-          </div>
-        </div>
-      )}
-
+      
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
   <div className="min-w-0">
     <h1 className="text-2xl font-bold text-slate-100">
