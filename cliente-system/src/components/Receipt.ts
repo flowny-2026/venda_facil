@@ -43,7 +43,7 @@ export interface ReceiptProps {
 }
 
 // ============================================
-// GERAR HTML DO CUPOM (compartilhado entre PDF e Impressão)
+// GERAR HTML DO CUPOM
 // ============================================
 
 function generateReceiptHTML(
@@ -64,12 +64,12 @@ function generateReceiptHTML(
       ].filter(Boolean).join(', ');
 
       return `
-        <div style="margin-bottom: 8px;">
-          <p style="font-weight: bold; margin: 0;">
+        <div style="margin-bottom: 10px;">
+          <p style="font-weight: bold; margin: 0; font-size: 13px;">
             ${item.product_name}
-            ${variants ? `<span style="font-size: 10px; color: #666;"> (${variants})</span>` : ''}
+            ${variants ? `<span style="font-size: 11px; color: #333;"> (${variants})</span>` : ''}
           </p>
-          <div style="display: flex; justify-content: space-between; font-size: 10px; color: #666;">
+          <div style="display: flex; justify-content: space-between; font-size: 12px; color: #000; font-weight: 600;">
             <span>${item.quantity}x ${formatCurrency(item.unit_price)}</span>
             <span>${formatCurrency(item.total_price)}</span>
           </div>
@@ -92,31 +92,44 @@ function generateReceiptHTML(
           @page { size: ${pageWidth} auto; margin: 0; }
           * { margin: 0; padding: 0; box-sizing: border-box; }
           body {
-            font-family: 'Courier New', monospace;
-            font-size: 12px;
-            line-height: 1.4;
+            font-family: 'Courier New', 'Courier', monospace;
+            font-size: 13px;
+            line-height: 1.5;
             width: ${pageWidth};
-            padding: 8px;
+            padding: 10px;
             color: #000;
             background: #fff;
+            font-weight: 700;
           }
           .center { text-align: center; }
           .bold { font-weight: bold; }
           .border-b {
-            border-bottom: 1px dashed #000;
-            padding-bottom: 4px;
-            margin-bottom: 4px;
+            border-bottom: 2px dashed #000;
+            padding-bottom: 6px;
+            margin-bottom: 6px;
           }
           .border-t {
-            border-top: 1px dashed #000;
-            padding-top: 4px;
-            margin-top: 4px;
+            border-top: 2px dashed #000;
+            padding-top: 6px;
+            margin-top: 6px;
           }
-          .flex-between { display: flex; justify-content: space-between; }
-          .text-xs { font-size: 10px; }
-          .mt-2 { margin-top: 8px; }
-          .red { color: #c00; }
-          .total { font-size: 14px; font-weight: bold; }
+          .flex-between {
+            display: flex;
+            justify-content: space-between;
+          }
+          .text-xs { font-size: 11px; }
+          .mt-2 { margin-top: 10px; }
+          .red { color: #c00; font-weight: bold; }
+          .total {
+            font-size: 16px;
+            font-weight: bold;
+          }
+          .label {
+            font-weight: bold;
+          }
+          .value {
+            font-weight: bold;
+          }
           @media print {
             body { width: 100%; }
             .no-print { display: none; }
@@ -126,69 +139,69 @@ function generateReceiptHTML(
       <body>
         <!-- CABEÇALHO -->
         <div class="center border-b">
-          <h2 class="bold" style="font-size: 14px;">${company.name}</h2>
-          ${company.phone ? `<p class="text-xs">Tel: ${company.phone}</p>` : ''}
-          ${company.cnpj ? `<p class="text-xs">CNPJ: ${company.cnpj}</p>` : ''}
-          ${company.address ? `<p class="text-xs">${company.address}</p>` : ''}
-          ${company.city && company.state ? `<p class="text-xs">${company.city} - ${company.state}</p>` : ''}
+          <h2 class="bold" style="font-size: 16px; margin-bottom: 4px;">${company.name}</h2>
+          ${company.phone ? `<p class="text-xs" style="font-weight: bold;">Tel: ${company.phone}</p>` : ''}
+          ${company.cnpj ? `<p class="text-xs" style="font-weight: bold;">CNPJ: ${company.cnpj}</p>` : ''}
+          ${company.address ? `<p class="text-xs" style="font-weight: bold;">${company.address}</p>` : ''}
+          ${company.city && company.state ? `<p class="text-xs" style="font-weight: bold;">${company.city} - ${company.state}</p>` : ''}
         </div>
 
         <!-- TIPO -->
         <div class="center border-b">
-          <p class="bold">CUPOM NÃO FISCAL</p>
-          <p class="text-xs">(Não válido como documento fiscal)</p>
+          <p class="bold" style="font-size: 14px;">CUPOM NÃO FISCAL</p>
+          <p class="text-xs" style="font-weight: bold;">(Não válido como documento fiscal)</p>
         </div>
 
         <!-- INFO VENDA -->
-        <div class="border-b text-xs" style="line-height: 1.6;">
-          <p><span class="bold">Cupom:</span> ${sale.receipt_number}</p>
-          <p><span class="bold">Data:</span> ${dateStr} ${timeStr}</p>
-          <p><span class="bold">Vendedor:</span> ${sale.seller_name}</p>
+        <div class="border-b text-xs" style="line-height: 1.8; font-weight: bold;">
+          <p><span class="label">Cupom:</span> ${sale.receipt_number}</p>
+          <p><span class="label">Data:</span> ${dateStr} ${timeStr}</p>
+          <p><span class="label">Vendedor:</span> ${sale.seller_name}</p>
         </div>
 
         <!-- PRODUTOS -->
         <div class="border-b">
-          <p class="center bold" style="margin-bottom: 8px;">PRODUTOS</p>
+          <p class="center bold" style="margin-bottom: 10px; font-size: 14px;">PRODUTOS</p>
           ${itemsHTML}
         </div>
 
         <!-- TOTAIS -->
-        <div class="border-b text-xs" style="line-height: 1.8;">
+        <div class="border-b text-xs" style="line-height: 2; font-weight: bold;">
           <div class="flex-between">
-            <span>Subtotal:</span>
-            <span>${formatCurrency(sale.subtotal)}</span>
+            <span class="label">Subtotal:</span>
+            <span class="value">${formatCurrency(sale.subtotal)}</span>
           </div>
           ${sale.discount > 0 ? `
             <div class="flex-between red">
-              <span>Desconto:</span>
-              <span>- ${formatCurrency(sale.discount)}</span>
+              <span class="label">Desconto:</span>
+              <span class="value">- ${formatCurrency(sale.discount)}</span>
             </div>
           ` : ''}
           <div class="flex-between total border-t">
-            <span>TOTAL:</span>
-            <span>${formatCurrency(sale.total_amount)}</span>
+            <span class="label">TOTAL:</span>
+            <span class="value">${formatCurrency(sale.total_amount)}</span>
           </div>
         </div>
 
         <!-- PAGAMENTO -->
-        <div class="border-b text-xs" style="line-height: 1.8;">
-          <p><span class="bold">Forma de Pagamento:</span> ${sale.payment_method_name}</p>
+        <div class="border-b text-xs" style="line-height: 2; font-weight: bold;">
+          <p><span class="label">Forma de Pagamento:</span> ${sale.payment_method_name}</p>
           <div class="flex-between">
-            <span>Valor Recebido:</span>
-            <span>${formatCurrency(sale.payment_received)}</span>
+            <span class="label">Valor Recebido:</span>
+            <span class="value">${formatCurrency(sale.payment_received)}</span>
           </div>
           <div class="flex-between">
-            <span>Troco:</span>
-            <span>${formatCurrency(sale.change_amount)}</span>
+            <span class="label">Troco:</span>
+            <span class="value">${formatCurrency(sale.change_amount)}</span>
           </div>
         </div>
 
         <!-- RODAPÉ -->
-        <div class="center text-xs mt-2">
-          <p class="bold">Obrigado pela preferência!</p>
-          <p>Volte sempre!</p>
-          <p style="color: #666; margin-top: 4px;">VendaFácil - Sistema PDV</p>
-          <p style="color: #666;">${new Date().toLocaleDateString('pt-BR')}</p>
+        <div class="center text-xs mt-2" style="font-weight: bold;">
+          <p class="bold" style="font-size: 13px;">Obrigado pela preferência!</p>
+          <p style="font-size: 13px;">Volte sempre!</p>
+          <p style="color: #333; margin-top: 6px; font-weight: bold;">VendaFácil - Sistema PDV</p>
+          <p style="color: #333; font-weight: bold;">${new Date().toLocaleDateString('pt-BR')}</p>
         </div>
       </body>
     </html>
@@ -196,7 +209,7 @@ function generateReceiptHTML(
 }
 
 // ============================================
-// IMPRIMIR CUPOM (via navegador - funciona com qualquer impressora!)
+// IMPRIMIR CUPOM
 // ============================================
 
 export const printReceipt = (
@@ -215,10 +228,10 @@ export const printReceipt = (
 
   printWindow.document.write(html.replace('</body>', `
     <div class="no-print" style="margin-top: 20px; text-align: center; padding: 10px;">
-      <button onclick="window.print()" style="padding: 12px 24px; font-size: 14px; cursor: pointer; background: #2563eb; color: white; border: none; border-radius: 6px;">
+      <button onclick="window.print()" style="padding: 12px 24px; font-size: 14px; cursor: pointer; background: #2563eb; color: white; border: none; border-radius: 6px; font-weight: bold;">
         🖨️ Clique aqui para Imprimir
       </button>
-      <p style="margin-top: 10px; font-size: 11px; color: #666;">
+      <p style="margin-top: 10px; font-size: 11px; color: #666; font-weight: bold;">
         Selecione sua impressora no diálogo que abrirá
       </p>
     </div>
@@ -234,7 +247,7 @@ export const printReceipt = (
 };
 
 // ============================================
-// BAIXAR PDF (mantém jsPDF como opção)
+// BAIXAR PDF
 // ============================================
 
 export const downloadReceipt = (
@@ -283,7 +296,8 @@ ${sale.items.map(item => {
     if (item.variant_color) variants.push(`Cor: ${item.variant_color}`);
     productName += ` (${variants.join(', ')})`;
   }
-  return `${productName}\n${item.quantity}x R$ ${item.unit_price.toFixed(2)} = R$ ${item.total_price.toFixed(2)}`;
+  return `${productName}
+${item.quantity}x R$ ${item.unit_price.toFixed(2)} = R$ ${item.total_price.toFixed(2)}`;
 }).join('\n\n')}
 
 *TOTAIS:*
