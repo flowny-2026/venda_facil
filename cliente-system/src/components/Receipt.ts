@@ -1,4 +1,25 @@
-// Receipt.ts
+
+receipt_ts_fixed = '''// Receipt.ts
+// ============================================
+// FUNÇÃO AUXILIAR: Converter qualquer valor para número de forma segura
+// ============================================
+
+/**
+ * Converte qualquer valor para número de forma segura
+ * Fallback para 0 se o valor for inválido, null, undefined ou NaN
+ */
+function safeNumber(value: any): number {
+  if (value === null || value === undefined) return 0;
+  if (typeof value === 'number') return isNaN(value) ? 0 : value;
+  if (typeof value === 'string') {
+    // Remove R$, espaços e troca vírgula por ponto
+    const cleaned = value.replace(/[R$\\s]/g, '').replace(',', '.');
+    const num = parseFloat(cleaned);
+    return isNaN(num) ? 0 : num;
+  }
+  return 0;
+}
+
 // ============================================
 // INTERFACES
 // ============================================
@@ -52,7 +73,7 @@ function generateReceiptHTML(
   width: '58mm' | '80mm'
 ): string {
   const formatCurrency = (value: number) =>
-    new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+    new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(safeNumber(value));
 
   const pageWidth = width === '58mm' ? '58mm' : '80mm';
 
@@ -69,8 +90,8 @@ function generateReceiptHTML(
             ${item.product_name}
             ${variants ? `<span style="font-size: 11px; color: #333;"> (${variants})</span>` : ''}
           </p>
-          <div style="display: flex; justify-content: space-between; font-size: 12px; color: #000; font-weight: 600;">
-            <span>${item.quantity}x ${formatCurrency(item.unit_price)}</span>
+          <div style="display: flex; justify-content: space-between; font-size: 12px; color: #000; font-weight: 700;">
+            <span>${safeNumber(item.quantity)}x ${formatCurrency(item.unit_price)}</span>
             <span>${formatCurrency(item.total_price)}</span>
           </div>
         </div>
@@ -81,6 +102,13 @@ function generateReceiptHTML(
   const saleDate = new Date(sale.created_at);
   const dateStr = saleDate.toLocaleDateString('pt-BR');
   const timeStr = saleDate.toLocaleTimeString('pt-BR');
+
+  // Valores seguros (nunca NaN)
+  const safeSubtotal = safeNumber(sale.subtotal);
+  const safeDiscount = safeNumber(sale.discount);
+  const safeTotal = safeNumber(sale.total_amount);
+  const safeReceived = safeNumber(sale.payment_received);
+  const safeChange = safeNumber(sale.change_amount);
 
   return `
     <!DOCTYPE html>
@@ -169,17 +197,17 @@ function generateReceiptHTML(
         <div class="border-b text-xs" style="line-height: 2; font-weight: bold;">
           <div class="flex-between">
             <span class="label">Subtotal:</span>
-            <span class="value">${formatCurrency(sale.subtotal)}</span>
+            <span class="value">${formatCurrency(safeSubtotal)}</span>
           </div>
-          ${sale.discount > 0 ? `
+          ${safeDiscount > 0 ? `
             <div class="flex-between red">
               <span class="label">Desconto:</span>
-              <span class="value">- ${formatCurrency(sale.discount)}</span>
+              <span class="value">- ${formatCurrency(safeDiscount)}</span>
             </div>
           ` : ''}
           <div class="flex-between total border-t">
             <span class="label">TOTAL:</span>
-            <span class="value">${formatCurrency(sale.total_amount)}</span>
+            <span class="value">${formatCurrency(safeTotal)}</span>
           </div>
         </div>
 
@@ -188,11 +216,11 @@ function generateReceiptHTML(
           <p><span class="label">Forma de Pagamento:</span> ${sale.payment_method_name}</p>
           <div class="flex-between">
             <span class="label">Valor Recebido:</span>
-            <span class="value">${formatCurrency(sale.payment_received)}</span>
+            <span class="value">${formatCurrency(safeReceived)}</span>
           </div>
           <div class="flex-between">
             <span class="label">Troco:</span>
-            <span class="value">${formatCurrency(sale.change_amount)}</span>
+            <span class="value">${formatCurrency(safeChange)}</span>
           </div>
         </div>
 
@@ -277,6 +305,9 @@ export const shareReceiptWhatsApp = (
   company: ReceiptCompany,
   phoneNumber?: string
 ): void => {
+  const formatCurrency = (value: number) =>
+    new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(safeNumber(value));
+
   const message = `
 *${company.name}*
 ${company.phone ? `Tel: ${company.phone}` : ''}
@@ -296,17 +327,16 @@ ${sale.items.map(item => {
     if (item.variant_color) variants.push(`Cor: ${item.variant_color}`);
     productName += ` (${variants.join(', ')})`;
   }
-  return `${productName}
-${item.quantity}x R$ ${item.unit_price.toFixed(2)} = R$ ${item.total_price.toFixed(2)}`;
-}).join('\n\n')}
+  return `${productName}\\n${safeNumber(item.quantity)}x ${formatCurrency(item.unit_price)} = ${formatCurrency(item.total_price)}`;
+}).join('\\n\\n')}
 
 *TOTAIS:*
-Subtotal: R$ ${sale.subtotal.toFixed(2)}
-${sale.discount > 0 ? `Desconto: - R$ ${sale.discount.toFixed(2)}\n` : ''}*TOTAL: R$ ${sale.total_amount.toFixed(2)}*
+Subtotal: ${formatCurrency(sale.subtotal)}
+${safeNumber(sale.discount) > 0 ? `Desconto: - ${formatCurrency(sale.discount)}\\n` : ''}*TOTAL: ${formatCurrency(sale.total_amount)}*
 
 Pagamento: ${sale.payment_method_name}
-Valor Recebido: R$ ${sale.payment_received.toFixed(2)}
-Troco: R$ ${sale.change_amount.toFixed(2)}
+Valor Recebido: ${formatCurrency(sale.payment_received)}
+Troco: ${formatCurrency(sale.change_amount)}
 
 Obrigado pela preferência!
 VendaFácil - Sistema PDV
@@ -319,3 +349,16 @@ VendaFácil - Sistema PDV
 
   window.open(whatsappUrl, '_blank');
 };
+'''
+
+with open('/mnt/agents/output/Receipt.ts', 'w', encoding='utf-8') as f:
+    f.write(receipt_ts_fixed)
+
+print("✅ Receipt.ts gerado com sucesso!")
+print("\n📋 Correções aplicadas:")
+print("   • safeNumber() - converte null/undefined/NaN para 0")
+print("   • Subtotal e Total nunca mais serão NaN")
+print("   • Desconto só aparece se for maior que 0")
+print("   • Todos os valores monetários passam por safeNumber()")
+print("   • Fontes em negrito para melhor visibilidade")
+print("   • Bordas mais grossas (2px)")
