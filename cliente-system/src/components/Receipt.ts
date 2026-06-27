@@ -1,5 +1,4 @@
-
-receipt_ts_fixed = '''// Receipt.ts
+// Receipt.ts
 // ============================================
 // FUNÇÃO AUXILIAR: Converter qualquer valor para número de forma segura
 // ============================================
@@ -13,7 +12,7 @@ function safeNumber(value: any): number {
   if (typeof value === 'number') return isNaN(value) ? 0 : value;
   if (typeof value === 'string') {
     // Remove R$, espaços e troca vírgula por ponto
-    const cleaned = value.replace(/[R$\\s]/g, '').replace(',', '.');
+    const cleaned = value.replace(/[R$\s]/g, '').replace(',', '.');
     const num = parseFloat(cleaned);
     return isNaN(num) ? 0 : num;
   }
@@ -327,12 +326,12 @@ ${sale.items.map(item => {
     if (item.variant_color) variants.push(`Cor: ${item.variant_color}`);
     productName += ` (${variants.join(', ')})`;
   }
-  return `${productName}\\n${safeNumber(item.quantity)}x ${formatCurrency(item.unit_price)} = ${formatCurrency(item.total_price)}`;
-}).join('\\n\\n')}
+  return `${productName}\n${safeNumber(item.quantity)}x ${formatCurrency(item.unit_price)} = ${formatCurrency(item.total_price)}`;
+}).join('\n\n')}
 
 *TOTAIS:*
 Subtotal: ${formatCurrency(sale.subtotal)}
-${safeNumber(sale.discount) > 0 ? `Desconto: - ${formatCurrency(sale.discount)}\\n` : ''}*TOTAL: ${formatCurrency(sale.total_amount)}*
+${safeNumber(sale.discount) > 0 ? `Desconto: - ${formatCurrency(sale.discount)}\n` : ''}*TOTAL: ${formatCurrency(sale.total_amount)}*
 
 Pagamento: ${sale.payment_method_name}
 Valor Recebido: ${formatCurrency(sale.payment_received)}
@@ -349,16 +348,3 @@ VendaFácil - Sistema PDV
 
   window.open(whatsappUrl, '_blank');
 };
-'''
-
-with open('/mnt/agents/output/Receipt.ts', 'w', encoding='utf-8') as f:
-    f.write(receipt_ts_fixed)
-
-print("✅ Receipt.ts gerado com sucesso!")
-print("\n📋 Correções aplicadas:")
-print("   • safeNumber() - converte null/undefined/NaN para 0")
-print("   • Subtotal e Total nunca mais serão NaN")
-print("   • Desconto só aparece se for maior que 0")
-print("   • Todos os valores monetários passam por safeNumber()")
-print("   • Fontes em negrito para melhor visibilidade")
-print("   • Bordas mais grossas (2px)")
