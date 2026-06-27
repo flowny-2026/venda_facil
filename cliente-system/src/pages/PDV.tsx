@@ -436,6 +436,9 @@ if (payments.length > 1) {
         payment_method_name: payments.map(p => `${p.payment_method_name} (${formatCurrency(parseFloat(p.amount as string))})`).join(' + '),
           payment_received: totalPaid,
           change_amount: Math.max(0, totalPaid - total),
+          subtotal: subtotal,
+          discount: discount,
+          total_amount: total,
         items: cart.map(item => ({
           product_name: item.product.name,
           quantity: item.quantity,
