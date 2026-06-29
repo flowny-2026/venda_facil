@@ -3,8 +3,9 @@ import { useState } from "react";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../hooks/useAuth";
 import { useUserRole } from "../hooks/useUserRole";
-import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
+
+// jsPDF removido - usar exportação HTML/CSV nativa
+// Se precisar de PDF no futuro, instalar: npm install jspdf jspdf-autotable
 
 interface ReportData {
   totalVendas: number;
@@ -29,11 +30,14 @@ interface InventoryItem {
   active: boolean;
 }
 
+type ReportType = 'vendas' | 'pagamentos' | 'vendedores' | 'inventario';
+type PeriodType = 'mes' | 'trimestre' | 'ano';
+
 export default function Relatorios() {
   const { user } = useAuth();
   const { isSeller, permissions } = useUserRole();
-  const [reportType, setReportType] = useState<'vendas' | 'pagamentos' | 'vendedores' | 'inventario'>('vendas');
-  const [period, setPeriod] = useState<'mes' | 'trimestre' | 'ano'>('mes');
+  const [reportType, setReportType] = useState<ReportType>('vendas');
+  const [period, setPeriod] = useState<PeriodType>('mes');
   const [loading, setLoading] = useState(false);
   const [reportData, setReportData] = useState<ReportData | null>(null);
   const [inventoryData, setInventoryData] = useState<InventoryItem[]>([]);
@@ -195,63 +199,91 @@ export default function Relatorios() {
     link.click();
   };
 
+  // Exportar PDF usando HTML nativo (sem jsPDF)
   const exportPDF = () => {
-    const doc = new jsPDF();
-    const now = new Date().toLocaleDateString('pt-BR');
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      alert('Permita popups para exportar PDF');
+      return;
+    }
 
-    doc.setFontSize(18);
-    doc.setTextColor(40, 40, 40);
+    const now = new Date().toLocaleDateString('pt-BR');
+    let title = '';
+    let content = '';
 
     if (reportType === 'inventario' && inventoryData.length > 0) {
-      doc.text('Relatório de Inventário', 14, 20);
-      doc.setFontSize(10);
-      doc.setTextColor(100);
-      doc.text(`Gerado em: ${now}`, 14, 28);
-      doc.text(`Total de produtos: ${inventoryData.length}`, 14, 34);
-      const totalEstoque = inventoryData.reduce((s, p) => s + (p.stock_quantity * p.cost_price), 0);
-      doc.text(`Valor total em estoque (custo): ${formatCurrency(totalEstoque)}`, 14, 40);
-
-      autoTable(doc, {
-        startY: 48,
-        head: [['Produto', 'Categoria', 'Estoque', 'Mín.', 'Preço Venda', 'Preço Custo', 'Status']],
-        body: inventoryData.map(p => [
-          p.name,
-          p.category,
-          p.track_stock ? p.stock_quantity.toString() : '∞',
-          p.min_stock.toString(),
-          formatCurrency(p.price),
-          formatCurrency(p.cost_price),
-          p.active ? 'Ativo' : 'Inativo'
-        ]),
-        styles: { fontSize: 8 },
-        headStyles: { fillColor: [59, 130, 246] },
-        alternateRowStyles: { fillColor: [245, 247, 250] }
-      });
+      title = 'Relatório de Inventário';
+      content = `
+        <h1>${title}</h1>
+        <p>Gerado em: ${now}</p>
+        <p>Total de produtos: ${inventoryData.length}</p>
+        <table border="1" cellpadding="8" cellspacing="0" style="border-collapse: collapse; width: 100%;">
+          <thead>
+            <tr style="background: #333; color: white;">
+              <th>Produto</th><th>Categoria</th><th>Estoque</th><th>Mín.</th><th>Preço Venda</th><th>Preço Custo</th><th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${inventoryData.map(p => `
+              <tr>
+                <td>${p.name}</td>
+                <td>${p.category}</td>
+                <td>${p.track_stock ? p.stock_quantity : '∞'}</td>
+                <td>${p.min_stock}</td>
+                <td>${formatCurrency(p.price)}</td>
+                <td>${formatCurrency(p.cost_price)}</td>
+                <td>${p.active ? 'Ativo' : 'Inativo'}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `;
     } else if (reportData) {
-      doc.text(`Relatório de ${reportType === 'vendas' ? 'Vendas por Categoria' : reportType === 'pagamentos' ? 'Formas de Pagamento' : 'Vendedores'}`, 14, 20);
-      doc.setFontSize(10);
-      doc.setTextColor(100);
-      doc.text(`Período: ${getPeriodLabel()} | Gerado em: ${now}`, 14, 28);
-      doc.text(`Total de Vendas: ${formatCurrency(reportData.totalVendas)}`, 14, 34);
-      doc.text(`Ticket Médio: ${formatCurrency(reportData.ticketMedio)}`, 14, 40);
-
+      title = `Relatório de ${reportType === 'vendas' ? 'Vendas por Categoria' : reportType === 'pagamentos' ? 'Formas de Pagamento' : 'Vendedores'}`;
       const rows = reportType === 'vendas'
         ? reportData.vendasPorCategoria.map(i => [i.categoria, formatCurrency(i.total), i.quantidade.toString(), `${((i.total / reportData.totalVendas) * 100).toFixed(1)}%`])
         : reportType === 'pagamentos'
         ? reportData.vendasPorFormaPagamento.map(i => [i.forma, formatCurrency(i.total), i.quantidade.toString(), `${((i.total / reportData.totalVendas) * 100).toFixed(1)}%`])
         : reportData.vendasPorVendedor.map(i => [i.vendedor, formatCurrency(i.total), i.quantidade.toString(), `${((i.total / reportData.totalVendas) * 100).toFixed(1)}%`]);
 
-      autoTable(doc, {
-        startY: 48,
-        head: [['Descrição', 'Total', 'Qtd', '% Total']],
-        body: rows,
-        styles: { fontSize: 9 },
-        headStyles: { fillColor: [59, 130, 246] },
-        alternateRowStyles: { fillColor: [245, 247, 250] }
-      });
+      content = `
+        <h1>${title}</h1>
+        <p>Período: ${getPeriodLabel()} | Gerado em: ${now}</p>
+        <p>Total de Vendas: ${formatCurrency(reportData.totalVendas)}</p>
+        <p>Ticket Médio: ${formatCurrency(reportData.ticketMedio)}</p>
+        <table border="1" cellpadding="8" cellspacing="0" style="border-collapse: collapse; width: 100%;">
+          <thead>
+            <tr style="background: #333; color: white;">
+              <th>Descrição</th><th>Total</th><th>Qtd</th><th>% Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows.map(row => `<tr>${row.map(cell => `<td>${cell}</td>`).join('')}</tr>`).join('')}
+          </tbody>
+        </table>
+      `;
     }
 
-    doc.save(`relatorio_${reportType}_${now.replace(/\//g, '-')}.pdf`);
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="UTF-8">
+          <title>${title}</title>
+          <style>
+            body { font-family: Arial, sans-serif; padding: 20px; }
+            h1 { color: #333; }
+            table { margin-top: 20px; }
+            th, td { border: 1px solid #ddd; text-align: left; }
+            th { background: #2563eb; color: white; }
+            tr:nth-child(even) { background: #f5f5f5; }
+          </style>
+        </head>
+        <body>${content}</body>
+      </html>
+    `);
+    printWindow.document.close();
+    printWindow.print();
   };
 
   const printReport = () => {
@@ -275,7 +307,7 @@ export default function Relatorios() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <label className="block text-sm font-medium text-slate-300 mb-2">Tipo</label>
-            <select value={reportType} onChange={(e) => setReportType(e.target.value as any)}
+            <select value={reportType} onChange={(e) => setReportType(e.target.value as ReportType)}
               className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50">
               <option value="vendas">Vendas por Categoria</option>
               <option value="pagamentos">Formas de Pagamento</option>
@@ -286,7 +318,7 @@ export default function Relatorios() {
           {reportType !== 'inventario' && (
             <div>
               <label className="block text-sm font-medium text-slate-300 mb-2">Período</label>
-              <select value={period} onChange={(e) => setPeriod(e.target.value as any)}
+              <select value={period} onChange={(e) => setPeriod(e.target.value as PeriodType)}
                 className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50">
                 <option value="mes">Último mês</option>
                 <option value="trimestre">Últimos 3 meses</option>

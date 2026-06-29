@@ -80,7 +80,6 @@ export default function ExchangeModal({ isOpen, onClose, companyId, onExchangeCo
       if (searchType === 'receipt') {
         query = query.ilike('receipt_number', `%${searchValue.trim()}%`);
       } else if (searchType === 'cpf') {
-        // Buscar clientes pelo CPF/documento primeiro
         const { data: customers } = await supabase
           .from('customers')
           .select('id')
@@ -121,7 +120,6 @@ export default function ExchangeModal({ isOpen, onClose, companyId, onExchangeCo
         return;
       }
 
-      // Buscar itens de cada venda
       const salesWithItems: Sale[] = [];
       for (const sale of salesData) {
         const { data: itemsData } = await supabase
@@ -176,7 +174,7 @@ export default function ExchangeModal({ isOpen, onClose, companyId, onExchangeCo
       return;
     }
     if (quantity > maxQuantity) quantity = maxQuantity;
-
+    
     setSelectedItems(prev => {
       const newMap = new Map(prev);
       newMap.set(itemId, quantity);
@@ -241,7 +239,6 @@ export default function ExchangeModal({ isOpen, onClose, companyId, onExchangeCo
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden shadow-2xl">
-        {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-slate-800">
           <h2 className="text-xl font-bold text-slate-100 flex items-center gap-2">
             <ArrowRightLeft className="w-6 h-6 text-amber-400" />
@@ -255,17 +252,13 @@ export default function ExchangeModal({ isOpen, onClose, companyId, onExchangeCo
           </button>
         </div>
 
-        {/* Body */}
         <div className="p-6 overflow-y-auto max-h-[calc(90vh-140px)]">
-
-          {/* Tipo de busca */}
           {!selectedSale && (
             <div className="space-y-4">
               <p className="text-sm text-slate-400">
                 Busque a venda original pelo número do cupom, CPF do cliente ou data da compra.
               </p>
 
-              {/* Tabs de tipo de busca */}
               <div className="flex gap-2">
                 <button
                   onClick={() => { setSearchType('receipt'); setSearchValue(''); setSearchDate(''); setError(''); }}
@@ -302,7 +295,6 @@ export default function ExchangeModal({ isOpen, onClose, companyId, onExchangeCo
                 </button>
               </div>
 
-              {/* Campo de busca */}
               <div className="flex gap-2">
                 {searchType === 'date' ? (
                   <input
@@ -339,14 +331,12 @@ export default function ExchangeModal({ isOpen, onClose, companyId, onExchangeCo
             </div>
           )}
 
-          {/* Erro */}
           {error && (
             <div className="mt-4 p-3 bg-red-900/20 border border-red-500/30 rounded-lg text-red-400 text-sm">
               {error}
             </div>
           )}
 
-          {/* Lista de vendas encontradas */}
           {!selectedSale && foundSales.length > 0 && (
             <div className="mt-4 space-y-2">
               <h4 className="text-sm font-medium text-slate-300 mb-2">
@@ -388,10 +378,8 @@ export default function ExchangeModal({ isOpen, onClose, companyId, onExchangeCo
             </div>
           )}
 
-          {/* Itens da venda selecionada */}
           {selectedSale && (
             <div className="space-y-4">
-              {/* Info da venda */}
               <div className="bg-slate-800/50 rounded-lg p-4 border border-slate-700">
                 <div className="flex items-center justify-between mb-2">
                   <h3 className="text-lg font-semibold text-slate-100">
@@ -415,7 +403,6 @@ export default function ExchangeModal({ isOpen, onClose, companyId, onExchangeCo
                 )}
               </div>
 
-              {/* Itens para selecionar */}
               <div>
                 <h4 className="text-sm font-medium text-slate-300 mb-3">
                   Selecione os itens para troca/devolução:
@@ -458,7 +445,6 @@ export default function ExchangeModal({ isOpen, onClose, companyId, onExchangeCo
                           </div>
                         </div>
 
-                        {/* Controle de quantidade quando selecionado */}
                         {isSelected && item.quantity > 1 && (
                           <div className="mt-3 ml-8 flex items-center gap-2">
                             <span className="text-xs text-slate-400">Qtd para troca:</span>
@@ -493,7 +479,6 @@ export default function ExchangeModal({ isOpen, onClose, companyId, onExchangeCo
                 </div>
               </div>
 
-              {/* Resumo da troca */}
               {selectedItems.size > 0 && (
                 <div className="bg-amber-900/10 border border-amber-500/30 rounded-lg p-4">
                   <h4 className="text-sm font-medium text-amber-400 mb-2">
@@ -527,7 +512,6 @@ export default function ExchangeModal({ isOpen, onClose, companyId, onExchangeCo
           )}
         </div>
 
-        {/* Footer */}
         {selectedSale && (
           <div className="p-6 border-t border-slate-800 flex gap-3">
             <button
