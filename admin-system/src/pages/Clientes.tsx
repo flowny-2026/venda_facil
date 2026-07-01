@@ -1,3 +1,4 @@
+import PaymentsModal from '../components/PaymentsModal';
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import Layout from '../components/Layout';
@@ -45,6 +46,8 @@ export default function Clientes() {
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
   const [companyUsers, setCompanyUsers] = useState<CompanyUser[]>([]);
+  const [showPaymentsModal, setShowPaymentsModal] = useState(false);
+  const [selectedPaymentCompany, setSelectedPaymentCompany] = useState<Company | null>(null);
 
   useEffect(() => {
     loadCompanies();
@@ -524,6 +527,16 @@ export default function Clientes() {
                           <Eye className="w-4 h-4" />
                         </button>
                         <button
+                          onClick={() => {
+                            setSelectedPaymentCompany(company);
+                            setShowPaymentsModal(true);
+                          }}
+                          className="p-2 text-slate-400 hover:text-green-400 hover:bg-green-500/10 rounded-lg transition-colors"
+                          title="Pagamentos"
+                        >
+                          <DollarSign className="w-4 h-4" />
+                        </button>
+                        <button
                           onClick={() => toggleCompanyStatus(company.id, company.status)}
                           className="p-2 text-slate-400 hover:text-amber-400 hover:bg-amber-500/10 rounded-lg transition-colors"
                           title={company.status === 'active' ? 'Suspender' : 'Ativar'}
@@ -638,6 +651,21 @@ export default function Clientes() {
               </div>
             </div>
           </div>
+        )}
+
+        {/* Modal de Pagamentos */}
+        {showPaymentsModal && selectedPaymentCompany && (
+          <PaymentsModal
+            company={{
+              id: selectedPaymentCompany.id,
+              name: selectedPaymentCompany.name,
+              monthly_fee: selectedPaymentCompany.monthly_fee || 49.90
+            }}
+            onClose={() => {
+              setShowPaymentsModal(false);
+              setSelectedPaymentCompany(null);
+            }}
+          />
         )}
       </div>
     </Layout>

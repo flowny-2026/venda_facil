@@ -15,7 +15,11 @@ import {
   Star,
   CreditCard,
   Banknote,
-  Smartphone
+  Smartphone,
+  Clock,
+  CheckCircle,
+  XCircle,
+  Bell
 } from 'lucide-react';
 
 interface Stats {
@@ -33,6 +37,15 @@ interface Stats {
   payment_stats: any;
 }
 
+interface PaymentAlert {
+  company_id: string;
+  company_name: string;
+  amount: number;
+  due_date: string;
+  days_until_due: number;
+  status: 'due_today' | 'due_tomorrow' | 'overdue' | 'due_soon';
+}
+
 export default function Dashboard() {
   const [stats, setStats] = useState<Stats>({
     total_companies: 0,
@@ -48,11 +61,72 @@ export default function Dashboard() {
     recent_sales: [],
     payment_stats: {}
   });
+  const [paymentAlerts, setPaymentAlerts] = useState<PaymentAlert[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingAlerts, setLoadingAlerts] = useState(true);
 
   useEffect(() => {
     loadStats();
+    loadPaymentAlerts();
   }, []);
+
+  const loadPaymentAlerts = async () => {
+    try {
+      setLoadingAlerts(true);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      const threeDaysFromNow = new Date(today);
+      threeDaysFromNow.setDate(threeDaysFromNow.getDate() + 3);
+
+      // Buscar todos os pagamentos pendentes com dados da empresa
+      const { data: payments, error } = await supabase
+        .from('client_payments')
+        .select(`
+          id,
+          company_id,
+          amount,
+          due_date,
+          status,
+          companies:company_id (name)
+        `)
+        .eq('status', 'pending')
+        .order('due_date', { ascending: true });
+
+      if (error) throw error;
+
+      const alerts: PaymentAlert[] = [];
+
+      payments?.forEach((payment: any) => {
+        const due = new Date(payment.due_date);
+        due.setHours(0, 0, 0, 0);
+        const diffDays = Math.round((due.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+
+        let status: PaymentAlert['status'];
+        if (diffDays < 0) status = 'overdue';
+        else if (diffDays === 0) status = 'due_today';
+        else if (diffDays === 1) status = 'due_tomorrow';
+        else if (diffDays <= 3) status = 'due_soon';
+        else return; // Só mostra até 3 dias antes
+
+        alerts.push({
+          company_id: payment.company_id,
+          company_name: payment.companies?.name || 'Empresa não identificada',
+          amount: payment.amount,
+          due_date: payment.due_date,
+          days_until_due: diffDays,
+          status
+        });
+      });
+
+      setPaymentAlerts(alerts);
+    } catch (error) {
+      console.error('Erro ao carregar alertas de pagamento:', error);
+    } finally {
+      setLoadingAlerts(false);
+    }
+  };
 
   const loadStats = async () => {
     try {
@@ -177,6 +251,49 @@ export default function Dashboard() {
     }).format(value);
   };
 
+  const formatDate = (dateStr: string) => {
+    return new Date(dateStr + 'T12:00:00').toLocaleDateString('pt-BR');
+  };
+
+  const getAlertIcon = (status: PaymentAlert['status']) => {
+    switch (status) {
+      case 'overdue': return <XCircle className="w-4 h-4 text-red-400" />;
+      case 'due_today': return <AlertTriangle className="w-4 h-4 text-amber-400" />;
+      case 'due_tomorrow': return <Clock className="w-4 h-4 text-amber-400" />;
+      case 'due_soon': return <Bell className="w-4 h-4 text-blue-400" />;
+    }
+  };
+
+  const getAlertLabel = (status: PaymentAlert['status']) => {
+    switch (status) {
+      case 'overdue': return 'Em atraso';
+      case 'due_today': return 'Vence hoje';
+      case 'due_tomorrow': return 'Vence amanhã';
+      case 'due_soon': return 'Vence em breve';
+    }
+  };
+
+  const getAlertColor = (status: PaymentAlert['status']) => {
+    switch (status) {
+      case 'overdue': return 'bg-red-500/10 border-red-500/30 text-red-400';
+      case 'due_today': return 'bg-amber-500/10 border-amber-500/30 text-amber-400';
+      case 'due_tomorrow': return 'bg-amber-500/10 border-amber-500/30 text-amber-400';
+      case 'due_soon': return 'bg-blue-500/10 border-blue-500/30 text-blue-400';
+    }
+  };
+
+  const getDaysText = (days: number) => {
+    if (days < 0) return `${Math.abs(days)} dias em atraso`;
+    if (days === 0) return 'Vence hoje';
+    if (days === 1) return 'Vence amanhã';
+    return `Vence em ${days} dias`;
+  };
+
+  const overdueCount = paymentAlerts.filter(a => a.status === 'overdue').length;
+  const dueTodayCount = paymentAlerts.filter(a => a.status === 'due_today').length;
+  const dueTomorrowCount = paymentAlerts.filter(a => a.status === 'due_tomorrow').length;
+  const totalAlertAmount = paymentAlerts.reduce((sum, a) => sum + a.amount, 0);
+
   if (loading) {
     return (
       <Layout>
@@ -200,13 +317,93 @@ export default function Dashboard() {
             <p className="mt-2 text-slate-400">Visão geral do seu negócio</p>
           </div>
           <button
-            onClick={loadStats}
+            onClick={() => { loadStats(); loadPaymentAlerts(); }}
             className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium transition-colors"
           >
             <RefreshCw className="w-4 h-4" />
             Atualizar
           </button>
         </div>
+
+        {/* ALERTAS DE PAGAMENTO - NOVO CARD */}
+        {(paymentAlerts.length > 0 || loadingAlerts) && (
+          <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-slate-100 flex items-center gap-2">
+                <Bell className="w-5 h-5 text-amber-400" />
+                Alertas de Pagamento
+                {paymentAlerts.length > 0 && (
+                  <span className="bg-amber-500/20 text-amber-400 text-xs px-2 py-0.5 rounded-full">
+                    {paymentAlerts.length} alerta{paymentAlerts.length > 1 ? 's' : ''}
+                  </span>
+                )}
+              </h3>
+              <Link 
+                to="/clientes" 
+                className="text-sm text-blue-400 hover:text-blue-300 transition-colors"
+              >
+                Ver clientes →
+              </Link>
+            </div>
+
+            {/* Resumo dos alertas */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+              <div className="bg-red-500/5 border border-red-500/20 rounded-lg p-3 text-center">
+                <div className="text-lg font-bold text-red-400">{overdueCount}</div>
+                <div className="text-xs text-slate-400">Em atraso</div>
+              </div>
+              <div className="bg-amber-500/5 border border-amber-500/20 rounded-lg p-3 text-center">
+                <div className="text-lg font-bold text-amber-400">{dueTodayCount}</div>
+                <div className="text-xs text-slate-400">Vence hoje</div>
+              </div>
+              <div className="bg-amber-500/5 border border-amber-500/20 rounded-lg p-3 text-center">
+                <div className="text-lg font-bold text-amber-400">{dueTomorrowCount}</div>
+                <div className="text-xs text-slate-400">Vence amanhã</div>
+              </div>
+              <div className="bg-blue-500/5 border border-blue-500/20 rounded-lg p-3 text-center">
+                <div className="text-lg font-bold text-blue-400">{formatCurrency(totalAlertAmount)}</div>
+                <div className="text-xs text-slate-400">Total pendente</div>
+              </div>
+            </div>
+
+            {/* Lista de alertas */}
+            {loadingAlerts ? (
+              <div className="flex items-center justify-center py-4 gap-2 text-slate-400">
+                <RefreshCw className="w-4 h-4 animate-spin" /> Carregando alertas...
+              </div>
+            ) : paymentAlerts.length === 0 ? (
+              <div className="text-center py-4 text-slate-400">
+                <CheckCircle className="w-6 h-6 mx-auto mb-1 text-green-400" />
+                <p className="text-sm">Nenhum pagamento pendente nos próximos 3 dias</p>
+              </div>
+            ) : (
+              <div className="space-y-2 max-h-64 overflow-y-auto">
+                {paymentAlerts.map((alert, index) => (
+                  <div 
+                    key={index} 
+                    className={`flex items-center justify-between p-3 border rounded-lg ${getAlertColor(alert.status)}`}
+                  >
+                    <div className="flex items-center gap-3">
+                      {getAlertIcon(alert.status)}
+                      <div>
+                        <div className="text-sm font-medium text-slate-200">{alert.company_name}</div>
+                        <div className="text-xs opacity-80">
+                          {getDaysText(alert.days_until_due)} • Vencimento: {formatDate(alert.due_date)}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-sm font-bold">{formatCurrency(alert.amount)}</div>
+                      <span className={`text-xs px-2 py-0.5 rounded-full border ${getAlertColor(alert.status)}`}>
+                        {getAlertLabel(alert.status)}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* KPIs Principais */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
