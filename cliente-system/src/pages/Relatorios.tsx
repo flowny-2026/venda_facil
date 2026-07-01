@@ -1,11 +1,10 @@
-import { Download, TrendingUp, DollarSign, Package, AlertCircle, FileText, Printer, FileSpreadsheet, BarChart3, Archive } from "lucide-react";
+import { Download, TrendingUp, DollarSign, Package, AlertCircle, FileText, Printer, BarChart3 } from "lucide-react";
 import { useState } from "react";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../hooks/useAuth";
 import { useUserRole } from "../hooks/useUserRole";
-
-// jsPDF removido - usar exportação HTML/CSV nativa
-// Se precisar de PDF no futuro, instalar: npm install jspdf jspdf-autotable
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 interface ReportData {
   totalVendas: number;
@@ -24,40 +23,36 @@ interface InventoryItem {
   category: string;
   price: number;
   cost_price: number;
+  promotional_price: number;
   stock_quantity: number;
   min_stock: number;
   track_stock: boolean;
   active: boolean;
 }
 
-type ReportType = 'vendas' | 'pagamentos' | 'vendedores' | 'inventario';
-type PeriodType = 'mes' | 'trimestre' | 'ano';
-
 export default function Relatorios() {
   const { user } = useAuth();
   const { isSeller, permissions } = useUserRole();
-  const [reportType, setReportType] = useState<ReportType>('vendas');
-  const [period, setPeriod] = useState<PeriodType>('mes');
+  const [reportType, setReportType] = useState<'vendas' | 'produtos' | 'vendedores' | 'inventario'>('vendas');
+  const [period, setPeriod] = useState<'mes' | 'trimestre' | 'ano'>('mes');
   const [loading, setLoading] = useState(false);
   const [reportData, setReportData] = useState<ReportData | null>(null);
   const [inventoryData, setInventoryData] = useState<InventoryItem[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   const getCompanyId = async (): Promise<string | null> => {
-    if (permissions?.companyId) return permissions.companyId;
     if (!user) return null;
-    const { data } = await supabase.from('company_users').select('company_id').eq('user_id', user.id).single();
+    const { data, error } = await supabase
+      .from('company_users')
+      .select('company_id')
+      .eq('user_id', user.id)
+      .single();
+    if (error) return null;
     return data?.company_id || null;
   };
 
   const formatCurrency = (value: number) =>
     new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
-
-  const getPeriodLabel = () => {
-    if (period === 'mes') return 'Último Mês';
-    if (period === 'trimestre') return 'Últimos 3 Meses';
-    return 'Último Ano';
-  };
 
   const generateReport = async () => {
     setLoading(true);
@@ -69,41 +64,52 @@ export default function Relatorios() {
       const companyId = await getCompanyId();
       if (!companyId) { setError('Empresa não encontrada'); return; }
 
+      // Relatório de Inventário
       if (reportType === 'inventario') {
-        const { data: products, error: prodError } = await supabase
+        const { data: products, error: productsError } = await supabase
           .from('products')
           .select(`*, product_categories(name)`)
           .eq('company_id', companyId)
           .order('name');
 
-        if (prodError) throw prodError;
+        if (productsError) throw productsError;
 
-        const items: InventoryItem[] = (products || []).map((p: any) => ({
+        const inventory = (products || []).map(p => ({
           id: p.id,
           name: p.name,
           sku: p.sku || '-',
           barcode: p.barcode || '-',
-          category: p.product_categories?.name || 'Sem categoria',
+          category: p.product_categories?.name || 'Sem Categoria',
           price: p.price || 0,
           cost_price: p.cost_price || 0,
+          promotional_price: p.promotional_price || 0,
           stock_quantity: p.stock_quantity || 0,
           min_stock: p.min_stock || 0,
           track_stock: p.track_stock,
           active: p.active
         }));
 
-        setInventoryData(items);
+        setInventoryData(inventory);
         return;
       }
 
+      // Relatórios de Vendas
       const now = new Date();
       let startDate = new Date();
       if (period === 'mes') startDate.setMonth(now.getMonth() - 1);
       else if (period === 'trimestre') startDate.setMonth(now.getMonth() - 3);
       else startDate.setFullYear(now.getFullYear() - 1);
 
-      let salesQuery = supabase.from('sales').select('*').eq('company_id', companyId).gte('created_at', startDate.toISOString());
-      if (isSeller && permissions?.sellerId) salesQuery = salesQuery.eq('seller_id', permissions.sellerId);
+      let salesQuery = supabase
+        .from('sales')
+        .select('*, sale_items(*, products(name, product_categories(name))), sellers(name), payment_methods(name)')
+        .eq('company_id', companyId)
+        .gte('created_at', startDate.toISOString());
+
+      if (isSeller && permissions?.sellerId) {
+        salesQuery = salesQuery.eq('seller_id', permissions.sellerId);
+      }
+
       const { data: sales, error: salesError } = await salesQuery;
       if (salesError) throw salesError;
 
@@ -112,52 +118,43 @@ export default function Relatorios() {
         return;
       }
 
-      const sellerIds = [...new Set(sales.map((s: any) => s.seller_id).filter(Boolean))];
-      const paymentMethodIds = [...new Set(sales.map((s: any) => s.payment_method_id).filter(Boolean))];
+      const totalVendas = sales.reduce((sum, s) => sum + (s.total_amount || 0), 0);
+      const totalProdutos = sales.reduce((sum, s) => sum + (s.sale_items?.length || 0), 0);
+      const ticketMedio = totalVendas / sales.length;
 
-      const [sellersRes, paymentMethodsRes, saleItemsRes] = await Promise.all([
-        sellerIds.length > 0 ? supabase.from('sellers').select('id, name').in('id', sellerIds) : Promise.resolve({ data: [] }),
-        paymentMethodIds.length > 0 ? supabase.from('payment_methods').select('id, name').in('id', paymentMethodIds) : Promise.resolve({ data: [] }),
-        supabase.from('sale_items').select('*, products(name, product_categories(name))').in('sale_id', sales.map((s: any) => s.id))
-      ]);
-
-      const sellersMap = new Map((sellersRes.data || []).map((s: any) => [s.id, s]));
-      const paymentMethodsMap = new Map((paymentMethodsRes.data || []).map((pm: any) => [pm.id, pm]));
-
-      const totalVendas = sales.reduce((sum: number, s: any) => sum + (s.total_amount || 0), 0);
-      const totalProdutos = (saleItemsRes.data || []).reduce((sum: number, i: any) => sum + (i.quantity || 0), 0);
-      const ticketMedio = sales.length > 0 ? totalVendas / sales.length : 0;
-
-      // Por categoria (via sale_items)
-      const catMap = new Map<string, { total: number; quantidade: number }>();
-      (saleItemsRes.data || []).forEach((item: any) => {
-        const cat = item.products?.product_categories?.name || 'Sem Categoria';
-        const cur = catMap.get(cat) || { total: 0, quantidade: 0 };
-        catMap.set(cat, { total: cur.total + item.total_price, quantidade: cur.quantidade + item.quantity });
+      // Por categoria
+      const categoriaMap = new Map<string, { total: number; quantidade: number }>();
+      sales.forEach(sale => {
+        (sale.sale_items || []).forEach((item: any) => {
+          const cat = item.products?.product_categories?.name || 'Sem Categoria';
+          const cur = categoriaMap.get(cat) || { total: 0, quantidade: 0 };
+          categoriaMap.set(cat, { total: cur.total + (item.total_price || 0), quantidade: cur.quantidade + (item.quantity || 0) });
+        });
       });
 
       // Por vendedor
-      const vendMap = new Map<string, { total: number; quantidade: number }>();
-      sales.forEach((s: any) => {
-        const vend = sellersMap.get(s.seller_id)?.name || 'Sem Vendedor';
-        const cur = vendMap.get(vend) || { total: 0, quantidade: 0 };
-        vendMap.set(vend, { total: cur.total + s.total_amount, quantidade: cur.quantidade + 1 });
+      const vendedorMap = new Map<string, { total: number; quantidade: number }>();
+      sales.forEach(sale => {
+        const v = (sale as any).sellers?.name || 'Sem Vendedor';
+        const cur = vendedorMap.get(v) || { total: 0, quantidade: 0 };
+        vendedorMap.set(v, { total: cur.total + (sale.total_amount || 0), quantidade: cur.quantidade + 1 });
       });
 
-      // Por forma de pagamento
-      const pmMap = new Map<string, { total: number; quantidade: number }>();
-      sales.forEach((s: any) => {
-        const pm = paymentMethodsMap.get(s.payment_method_id)?.name || 'Não informado';
-        const cur = pmMap.get(pm) || { total: 0, quantidade: 0 };
-        pmMap.set(pm, { total: cur.total + s.total_amount, quantidade: cur.quantidade + 1 });
+      // Por pagamento
+      const pagamentoMap = new Map<string, { total: number; quantidade: number }>();
+      sales.forEach(sale => {
+        const pm = (sale as any).payment_methods?.name || 'Não Informado';
+        const cur = pagamentoMap.get(pm) || { total: 0, quantidade: 0 };
+        pagamentoMap.set(pm, { total: cur.total + (sale.total_amount || 0), quantidade: cur.quantidade + 1 });
       });
 
       setReportData({
         totalVendas, totalProdutos, ticketMedio,
-        vendasPorCategoria: Array.from(catMap.entries()).map(([categoria, d]) => ({ categoria, ...d })),
-        vendasPorVendedor: Array.from(vendMap.entries()).map(([vendedor, d]) => ({ vendedor, ...d })),
-        vendasPorFormaPagamento: Array.from(pmMap.entries()).map(([forma, d]) => ({ forma, ...d })),
+        vendasPorCategoria: Array.from(categoriaMap.entries()).map(([categoria, d]) => ({ categoria, ...d })),
+        vendasPorVendedor: Array.from(vendedorMap.entries()).map(([vendedor, d]) => ({ vendedor, ...d })),
+        vendasPorFormaPagamento: Array.from(pagamentoMap.entries()).map(([forma, d]) => ({ forma, ...d })),
       });
+
     } catch (err: any) {
       setError(err.message || 'Erro ao gerar relatório');
     } finally {
@@ -165,133 +162,141 @@ export default function Relatorios() {
     }
   };
 
-  const exportCSV = () => {
-    let csv = '';
-    let filename = '';
-
-    if (reportType === 'inventario' && inventoryData.length > 0) {
-      csv = 'Nome,SKU,Código de Barras,Categoria,Preço Venda,Preço Custo,Estoque,Estoque Mínimo,Status\n';
-      inventoryData.forEach(p => {
-        csv += `"${p.name}","${p.sku}","${p.barcode}","${p.category}","${p.price.toFixed(2)}","${p.cost_price.toFixed(2)}","${p.stock_quantity}","${p.min_stock}","${p.active ? 'Ativo' : 'Inativo'}"\n`;
-      });
-      filename = 'inventario.csv';
-    } else if (reportData) {
-      if (reportType === 'vendas') {
-        csv = 'Categoria,Total,Quantidade\n';
-        reportData.vendasPorCategoria.forEach(i => { csv += `"${i.categoria}","${i.total.toFixed(2)}","${i.quantidade}"\n`; });
-        filename = `vendas_categoria_${period}.csv`;
-      } else if (reportType === 'pagamentos') {
-        csv = 'Forma de Pagamento,Total,Quantidade\n';
-        reportData.vendasPorFormaPagamento.forEach(i => { csv += `"${i.forma}","${i.total.toFixed(2)}","${i.quantidade}"\n`; });
-        filename = `vendas_pagamento_${period}.csv`;
-      } else if (reportType === 'vendedores') {
-        csv = 'Vendedor,Total,Quantidade\n';
-        reportData.vendasPorVendedor.forEach(i => { csv += `"${i.vendedor}","${i.total.toFixed(2)}","${i.quantidade}"\n`; });
-        filename = `vendedores_${period}.csv`;
-      }
-    }
-
-    if (!csv) return;
-    const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+  // Exportar Inventário CSV
+  const exportInventoryCSV = () => {
+    const header = 'Nome,SKU,Código de Barras,Categoria,Preço Venda,Preço Custo,Estoque,Estoque Mínimo,Status\n';
+    const rows = inventoryData.map(p =>
+      `"${p.name}","${p.sku}","${p.barcode}","${p.category}","${p.price.toFixed(2)}","${p.cost_price.toFixed(2)}","${p.stock_quantity}","${p.min_stock}","${p.active ? 'Ativo' : 'Inativo'}"`
+    ).join('\n');
+    const blob = new Blob([header + rows], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
-    link.download = filename;
+    link.download = `inventario_${new Date().toLocaleDateString('pt-BR').replace(/\//g, '-')}.csv`;
     link.click();
   };
 
-  // Exportar PDF usando HTML nativo (sem jsPDF)
-  const exportPDF = () => {
+  // Exportar Inventário PDF
+  const exportInventoryPDF = () => {
+    const doc = new jsPDF({ orientation: 'landscape' });
+    doc.setFontSize(16);
+    doc.text('Relatório de Inventário', 14, 15);
+    doc.setFontSize(10);
+    doc.text(`Gerado em: ${new Date().toLocaleString('pt-BR')}`, 14, 22);
+
+    const totalEstoque = inventoryData.reduce((sum, p) => sum + (p.track_stock ? p.stock_quantity : 0), 0);
+    const totalValorVenda = inventoryData.reduce((sum, p) => sum + (p.price * p.stock_quantity), 0);
+    const totalValorCusto = inventoryData.reduce((sum, p) => sum + (p.cost_price * p.stock_quantity), 0);
+
+    doc.text(`Total de Produtos: ${inventoryData.length} | Total em Estoque: ${totalEstoque} un | Valor Total (Venda): ${formatCurrency(totalValorVenda)} | Valor Total (Custo): ${formatCurrency(totalValorCusto)}`, 14, 29);
+
+    autoTable(doc, {
+      startY: 34,
+      head: [['Nome', 'SKU', 'Categoria', 'Preço Venda', 'Preço Custo', 'Lucro Unit.', 'Estoque', 'Mín.', 'Status']],
+      body: inventoryData.map(p => [
+        p.name,
+        p.sku,
+        p.category,
+        formatCurrency(p.price),
+        formatCurrency(p.cost_price),
+        formatCurrency(p.price - p.cost_price),
+        p.track_stock ? p.stock_quantity.toString() : '∞',
+        p.min_stock.toString(),
+        p.active ? 'Ativo' : 'Inativo'
+      ]),
+      styles: { fontSize: 8 },
+      headStyles: { fillColor: [30, 41, 59] },
+      alternateRowStyles: { fillColor: [248, 250, 252] },
+    });
+
+    doc.save(`inventario_${new Date().toLocaleDateString('pt-BR').replace(/\//g, '-')}.pdf`);
+  };
+
+  // Imprimir Inventário
+  const printInventory = () => {
+    const totalEstoque = inventoryData.reduce((sum, p) => sum + (p.track_stock ? p.stock_quantity : 0), 0);
+    const totalValorVenda = inventoryData.reduce((sum, p) => sum + (p.price * p.stock_quantity), 0);
+    const totalValorCusto = inventoryData.reduce((sum, p) => sum + (p.cost_price * p.stock_quantity), 0);
+
     const printWindow = window.open('', '_blank');
-    if (!printWindow) {
-      alert('Permita popups para exportar PDF');
-      return;
-    }
-
-    const now = new Date().toLocaleDateString('pt-BR');
-    let title = '';
-    let content = '';
-
-    if (reportType === 'inventario' && inventoryData.length > 0) {
-      title = 'Relatório de Inventário';
-      content = `
-        <h1>${title}</h1>
-        <p>Gerado em: ${now}</p>
-        <p>Total de produtos: ${inventoryData.length}</p>
-        <table border="1" cellpadding="8" cellspacing="0" style="border-collapse: collapse; width: 100%;">
-          <thead>
-            <tr style="background: #333; color: white;">
-              <th>Produto</th><th>Categoria</th><th>Estoque</th><th>Mín.</th><th>Preço Venda</th><th>Preço Custo</th><th>Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${inventoryData.map(p => `
-              <tr>
-                <td>${p.name}</td>
-                <td>${p.category}</td>
-                <td>${p.track_stock ? p.stock_quantity : '∞'}</td>
-                <td>${p.min_stock}</td>
-                <td>${formatCurrency(p.price)}</td>
-                <td>${formatCurrency(p.cost_price)}</td>
-                <td>${p.active ? 'Ativo' : 'Inativo'}</td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
-      `;
-    } else if (reportData) {
-      title = `Relatório de ${reportType === 'vendas' ? 'Vendas por Categoria' : reportType === 'pagamentos' ? 'Formas de Pagamento' : 'Vendedores'}`;
-      const rows = reportType === 'vendas'
-        ? reportData.vendasPorCategoria.map(i => [i.categoria, formatCurrency(i.total), i.quantidade.toString(), `${((i.total / reportData.totalVendas) * 100).toFixed(1)}%`])
-        : reportType === 'pagamentos'
-        ? reportData.vendasPorFormaPagamento.map(i => [i.forma, formatCurrency(i.total), i.quantidade.toString(), `${((i.total / reportData.totalVendas) * 100).toFixed(1)}%`])
-        : reportData.vendasPorVendedor.map(i => [i.vendedor, formatCurrency(i.total), i.quantidade.toString(), `${((i.total / reportData.totalVendas) * 100).toFixed(1)}%`]);
-
-      content = `
-        <h1>${title}</h1>
-        <p>Período: ${getPeriodLabel()} | Gerado em: ${now}</p>
-        <p>Total de Vendas: ${formatCurrency(reportData.totalVendas)}</p>
-        <p>Ticket Médio: ${formatCurrency(reportData.ticketMedio)}</p>
-        <table border="1" cellpadding="8" cellspacing="0" style="border-collapse: collapse; width: 100%;">
-          <thead>
-            <tr style="background: #333; color: white;">
-              <th>Descrição</th><th>Total</th><th>Qtd</th><th>% Total</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${rows.map(row => `<tr>${row.map(cell => `<td>${cell}</td>`).join('')}</tr>`).join('')}
-          </tbody>
-        </table>
-      `;
-    }
-
+    if (!printWindow) return;
     printWindow.document.write(`
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <meta charset="UTF-8">
-          <title>${title}</title>
-          <style>
-            body { font-family: Arial, sans-serif; padding: 20px; }
-            h1 { color: #333; }
-            table { margin-top: 20px; }
-            th, td { border: 1px solid #ddd; text-align: left; }
-            th { background: #2563eb; color: white; }
-            tr:nth-child(even) { background: #f5f5f5; }
-          </style>
-        </head>
-        <body>${content}</body>
-      </html>
+      <html><head><title>Inventário</title>
+      <style>
+        body { font-family: Arial, sans-serif; font-size: 12px; }
+        h1 { font-size: 18px; margin-bottom: 4px; }
+        p { margin: 2px 0; color: #555; }
+        table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+        th { background: #1e293b; color: white; padding: 8px; text-align: left; font-size: 11px; }
+        td { padding: 6px 8px; border-bottom: 1px solid #e2e8f0; font-size: 11px; }
+        tr:nth-child(even) td { background: #f8fafc; }
+        .summary { display: flex; gap: 24px; margin: 12px 0; padding: 12px; background: #f1f5f9; border-radius: 8px; }
+        .summary div { text-align: center; }
+        .summary strong { display: block; font-size: 16px; }
+        .low { color: #dc2626; }
+        @media print { body { margin: 10px; } }
+      </style></head><body>
+      <h1>Relatório de Inventário</h1>
+      <p>Gerado em: ${new Date().toLocaleString('pt-BR')}</p>
+      <div class="summary">
+        <div><strong>${inventoryData.length}</strong>Produtos</div>
+        <div><strong>${totalEstoque}</strong>Unidades</div>
+        <div><strong>${formatCurrency(totalValorVenda)}</strong>Valor Venda</div>
+        <div><strong>${formatCurrency(totalValorCusto)}</strong>Valor Custo</div>
+        <div><strong>${formatCurrency(totalValorVenda - totalValorCusto)}</strong>Lucro Potencial</div>
+      </div>
+      <table>
+        <thead><tr>
+          <th>Nome</th><th>SKU</th><th>Categoria</th>
+          <th>Preço Venda</th><th>Preço Custo</th><th>Lucro Unit.</th>
+          <th>Estoque</th><th>Mín.</th><th>Status</th>
+        </tr></thead>
+        <tbody>
+          ${inventoryData.map(p => `
+            <tr>
+              <td>${p.name}</td>
+              <td>${p.sku}</td>
+              <td>${p.category}</td>
+              <td>${formatCurrency(p.price)}</td>
+              <td>${formatCurrency(p.cost_price)}</td>
+              <td>${formatCurrency(p.price - p.cost_price)}</td>
+              <td class="${p.track_stock && p.stock_quantity <= p.min_stock ? 'low' : ''}">${p.track_stock ? p.stock_quantity : '∞'}</td>
+              <td>${p.min_stock}</td>
+              <td>${p.active ? 'Ativo' : 'Inativo'}</td>
+            </tr>`).join('')}
+        </tbody>
+      </table>
+      <script>window.onload = () => { window.print(); window.close(); }</script>
+      </body></html>
     `);
     printWindow.document.close();
-    printWindow.print();
   };
 
-  const printReport = () => {
-    window.print();
+  // Exportar CSV de vendas
+  const exportToCSV = () => {
+    if (!reportData) return;
+    let csv = '';
+    if (reportType === 'vendas') {
+      csv = 'Categoria,Total,Quantidade\n' + reportData.vendasPorCategoria.map(i => `${i.categoria},${i.total.toFixed(2)},${i.quantidade}`).join('\n');
+    } else if (reportType === 'produtos') {
+      csv = 'Forma de Pagamento,Total,Quantidade\n' + reportData.vendasPorFormaPagamento.map(i => `${i.forma},${i.total.toFixed(2)},${i.quantidade}`).join('\n');
+    } else if (reportType === 'vendedores') {
+      csv = 'Vendedor,Total,Quantidade\n' + reportData.vendasPorVendedor.map(i => `${i.vendedor},${i.total.toFixed(2)},${i.quantidade}`).join('\n');
+    }
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `relatorio_${reportType}_${period}.csv`;
+    link.click();
   };
 
-  const totalEstoque = inventoryData.reduce((s, p) => s + (p.stock_quantity * p.cost_price), 0);
-  const totalEstoqueVenda = inventoryData.reduce((s, p) => s + (p.stock_quantity * p.price), 0);
+  const getPeriodLabel = () => {
+    if (period === 'mes') return 'Último Mês';
+    if (period === 'trimestre') return 'Últimos 3 Meses';
+    return 'Último Ano';
+  };
+
+  const totalEstoqueValue = inventoryData.reduce((sum, p) => sum + (p.price * p.stock_quantity), 0);
+  const totalCustoValue = inventoryData.reduce((sum, p) => sum + (p.cost_price * p.stock_quantity), 0);
   const produtosBaixoEstoque = inventoryData.filter(p => p.track_stock && p.stock_quantity <= p.min_stock).length;
 
   return (
@@ -301,24 +306,24 @@ export default function Relatorios() {
         <p className="mt-2 text-slate-400">Relatórios detalhados e análises do seu negócio</p>
       </div>
 
-      {/* Configurações */}
+      {/* Filtros */}
       <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-6">
         <h2 className="text-lg font-semibold text-slate-100 mb-4">Gerar Relatório</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <label className="block text-sm font-medium text-slate-300 mb-2">Tipo</label>
-            <select value={reportType} onChange={(e) => setReportType(e.target.value as ReportType)}
+            <select value={reportType} onChange={(e) => setReportType(e.target.value as any)}
               className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50">
               <option value="vendas">Vendas por Categoria</option>
-              <option value="pagamentos">Formas de Pagamento</option>
+              <option value="produtos">Vendas por Pagamento</option>
               {!isSeller && <option value="vendedores">Performance de Vendedores</option>}
-              <option value="inventario">📦 Inventário de Produtos</option>
+              <option value="inventario">📦 Inventário de Estoque</option>
             </select>
           </div>
           {reportType !== 'inventario' && (
             <div>
               <label className="block text-sm font-medium text-slate-300 mb-2">Período</label>
-              <select value={period} onChange={(e) => setPeriod(e.target.value as PeriodType)}
+              <select value={period} onChange={(e) => setPeriod(e.target.value as any)}
                 className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50">
                 <option value="mes">Último mês</option>
                 <option value="trimestre">Últimos 3 meses</option>
@@ -326,7 +331,8 @@ export default function Relatorios() {
               </select>
             </div>
           )}
-          <div className={reportType === 'inventario' ? 'md:col-span-2' : ''} style={{display:'flex', alignItems:'flex-end'}}>
+          <div className={reportType === 'inventario' ? 'md:col-span-2' : ''}>
+            <label className="block text-sm font-medium text-slate-300 mb-2">&nbsp;</label>
             <button onClick={generateReport} disabled={loading}
               className="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50">
               {loading ? 'Gerando...' : 'Gerar Relatório'}
@@ -342,47 +348,59 @@ export default function Relatorios() {
         </div>
       )}
 
-      {/* INVENTÁRIO */}
-      {reportType === 'inventario' && inventoryData.length > 0 && (
+      {/* Relatório de Inventário */}
+      {inventoryData.length > 0 && reportType === 'inventario' && (
         <>
-          {/* KPIs inventário */}
+          {/* KPIs do Inventário */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-4">
-              <div className="text-xs text-slate-400 mb-1">Total Produtos</div>
+              <div className="flex items-center gap-2 mb-1">
+                <Package className="w-5 h-5 text-blue-400" />
+                <span className="text-xs text-slate-400">Total Produtos</span>
+              </div>
               <div className="text-2xl font-bold text-slate-100">{inventoryData.length}</div>
             </div>
             <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-4">
-              <div className="text-xs text-slate-400 mb-1">Valor em Custo</div>
-              <div className="text-xl font-bold text-red-400">{formatCurrency(totalEstoque)}</div>
+              <div className="flex items-center gap-2 mb-1">
+                <BarChart3 className="w-5 h-5 text-green-400" />
+                <span className="text-xs text-slate-400">Valor em Estoque</span>
+              </div>
+              <div className="text-xl font-bold text-green-400">{formatCurrency(totalEstoqueValue)}</div>
             </div>
             <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-4">
-              <div className="text-xs text-slate-400 mb-1">Valor em Venda</div>
-              <div className="text-xl font-bold text-green-400">{formatCurrency(totalEstoqueVenda)}</div>
+              <div className="flex items-center gap-2 mb-1">
+                <DollarSign className="w-5 h-5 text-purple-400" />
+                <span className="text-xs text-slate-400">Custo em Estoque</span>
+              </div>
+              <div className="text-xl font-bold text-purple-400">{formatCurrency(totalCustoValue)}</div>
             </div>
             <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-4">
-              <div className="text-xs text-slate-400 mb-1">Estoque Baixo</div>
-              <div className="text-2xl font-bold text-amber-400">{produtosBaixoEstoque}</div>
+              <div className="flex items-center gap-2 mb-1">
+                <AlertCircle className="w-5 h-5 text-red-400" />
+                <span className="text-xs text-slate-400">Estoque Baixo</span>
+              </div>
+              <div className="text-2xl font-bold text-red-400">{produtosBaixoEstoque}</div>
             </div>
           </div>
 
-          {/* Ações */}
-          <div className="flex gap-3 flex-wrap">
-            <button onClick={exportCSV} className="flex items-center gap-2 px-4 py-2 text-sm text-green-400 border border-green-500/30 rounded-lg hover:bg-green-500/10 transition-colors">
-              <FileSpreadsheet className="w-4 h-4" /> Exportar Excel/CSV
-            </button>
-            <button onClick={exportPDF} className="flex items-center gap-2 px-4 py-2 text-sm text-red-400 border border-red-500/30 rounded-lg hover:bg-red-500/10 transition-colors">
-              <FileText className="w-4 h-4" /> Exportar PDF
-            </button>
-            <button onClick={printReport} className="flex items-center gap-2 px-4 py-2 text-sm text-blue-400 border border-blue-500/30 rounded-lg hover:bg-blue-500/10 transition-colors">
-              <Printer className="w-4 h-4" /> Imprimir
-            </button>
-          </div>
-
-          {/* Tabela inventário */}
+          {/* Tabela de Inventário */}
           <div className="bg-slate-900/50 border border-slate-800 rounded-2xl overflow-hidden">
-            <div className="p-4 border-b border-slate-800 flex items-center gap-2">
-              <Archive className="w-5 h-5 text-blue-400" />
-              <h3 className="text-base font-semibold text-slate-100">Inventário Completo ({inventoryData.length} produtos)</h3>
+            <div className="p-6 border-b border-slate-800 flex items-center justify-between flex-wrap gap-3">
+              <h2 className="text-lg font-semibold text-slate-100">📦 Inventário Completo</h2>
+              <div className="flex gap-2">
+                <button onClick={printInventory}
+                  className="flex items-center gap-2 px-3 py-2 text-sm text-slate-300 border border-slate-700 rounded-lg hover:border-slate-600 transition-colors">
+                  <Printer className="w-4 h-4" /> Imprimir
+                </button>
+                <button onClick={exportInventoryCSV}
+                  className="flex items-center gap-2 px-3 py-2 text-sm text-green-400 border border-green-500/30 rounded-lg hover:border-green-500/50 transition-colors">
+                  <Download className="w-4 h-4" /> CSV
+                </button>
+                <button onClick={exportInventoryPDF}
+                  className="flex items-center gap-2 px-3 py-2 text-sm text-blue-400 border border-blue-500/30 rounded-lg hover:border-blue-500/50 transition-colors">
+                  <FileText className="w-4 h-4" /> PDF
+                </button>
+              </div>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full">
@@ -390,65 +408,59 @@ export default function Relatorios() {
                   <tr>
                     <th className="px-4 py-3 text-left text-xs font-medium text-slate-400 uppercase">Produto</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-slate-400 uppercase">Categoria</th>
-                    <th className="px-4 py-3 text-right text-xs font-medium text-slate-400 uppercase">Estoque</th>
-                    <th className="px-4 py-3 text-right text-xs font-medium text-slate-400 uppercase">Mín.</th>
-                    <th className="px-4 py-3 text-right text-xs font-medium text-slate-400 uppercase">Preço Custo</th>
                     <th className="px-4 py-3 text-right text-xs font-medium text-slate-400 uppercase">Preço Venda</th>
-                    <th className="px-4 py-3 text-right text-xs font-medium text-slate-400 uppercase">Margem</th>
+                    <th className="px-4 py-3 text-right text-xs font-medium text-slate-400 uppercase">Preço Custo</th>
+                    <th className="px-4 py-3 text-right text-xs font-medium text-slate-400 uppercase">Lucro Unit.</th>
+                    <th className="px-4 py-3 text-right text-xs font-medium text-slate-400 uppercase">Estoque</th>
                     <th className="px-4 py-3 text-right text-xs font-medium text-slate-400 uppercase">Valor Total</th>
                     <th className="px-4 py-3 text-center text-xs font-medium text-slate-400 uppercase">Status</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-800">
-                  {inventoryData.map((p) => {
-                    const margem = p.price > 0 ? ((p.price - p.cost_price) / p.price * 100) : 0;
-                    const valorTotal = p.stock_quantity * p.cost_price;
-                    const baixoEstoque = p.track_stock && p.stock_quantity <= p.min_stock;
+                  {inventoryData.map((product) => {
+                    const isLowStock = product.track_stock && product.stock_quantity <= product.min_stock;
                     return (
-                      <tr key={p.id} className={`hover:bg-slate-800/30 ${baixoEstoque ? 'bg-amber-500/5' : ''}`}>
+                      <tr key={product.id} className={`hover:bg-slate-800/30 ${isLowStock ? 'bg-red-500/5' : ''}`}>
                         <td className="px-4 py-3">
-                          <div className="text-sm font-medium text-slate-200">{p.name}</div>
-                          {p.sku !== '-' && <div className="text-xs text-slate-500">SKU: {p.sku}</div>}
+                          <div className="text-sm font-medium text-slate-200">{product.name}</div>
+                          <div className="text-xs text-slate-500">{product.sku !== '-' ? `SKU: ${product.sku}` : ''}</div>
                         </td>
-                        <td className="px-4 py-3 text-sm text-slate-400">{p.category}</td>
+                        <td className="px-4 py-3 text-sm text-slate-300">{product.category}</td>
+                        <td className="px-4 py-3 text-sm text-slate-200 text-right">{formatCurrency(product.price)}</td>
+                        <td className="px-4 py-3 text-sm text-slate-200 text-right">{formatCurrency(product.cost_price)}</td>
                         <td className="px-4 py-3 text-right">
-                          <span className={`text-sm font-medium ${baixoEstoque ? 'text-amber-400' : 'text-slate-200'}`}>
-                            {p.track_stock ? p.stock_quantity : '∞'}
+                          <span className={`text-sm font-medium ${product.price - product.cost_price >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                            {formatCurrency(product.price - product.cost_price)}
                           </span>
-                          {baixoEstoque && <div className="text-xs text-amber-500">Baixo!</div>}
                         </td>
-                        <td className="px-4 py-3 text-right text-sm text-slate-400">{p.min_stock}</td>
-                        <td className="px-4 py-3 text-right text-sm text-slate-300">{formatCurrency(p.cost_price)}</td>
-                        <td className="px-4 py-3 text-right text-sm text-green-400 font-medium">{formatCurrency(p.price)}</td>
-                        <td className="px-4 py-3 text-right text-sm text-blue-400">{margem.toFixed(1)}%</td>
-                        <td className="px-4 py-3 text-right text-sm text-slate-300">{formatCurrency(valorTotal)}</td>
+                        <td className="px-4 py-3 text-right">
+                          <span className={`text-sm font-medium ${isLowStock ? 'text-red-400' : 'text-slate-200'}`}>
+                            {product.track_stock ? product.stock_quantity : '∞'}
+                            {isLowStock && <span className="text-xs ml-1">⚠️</span>}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-sm text-slate-200 text-right">
+                          {formatCurrency(product.price * product.stock_quantity)}
+                        </td>
                         <td className="px-4 py-3 text-center">
-                          <span className={`text-xs px-2 py-1 rounded-full ${p.active ? 'bg-green-500/15 text-green-400' : 'bg-red-500/15 text-red-400'}`}>
-                            {p.active ? 'Ativo' : 'Inativo'}
+                          <span className={`inline-flex px-2 py-0.5 text-xs rounded-full ${product.active ? 'bg-green-500/15 text-green-400' : 'bg-red-500/15 text-red-400'}`}>
+                            {product.active ? 'Ativo' : 'Inativo'}
                           </span>
                         </td>
                       </tr>
                     );
                   })}
                 </tbody>
-                <tfoot className="bg-slate-800/30 border-t border-slate-700">
-                  <tr>
-                    <td colSpan={4} className="px-4 py-3 text-sm font-semibold text-slate-300">TOTAL</td>
-                    <td className="px-4 py-3 text-right text-sm font-semibold text-red-400">{formatCurrency(totalEstoque)}</td>
-                    <td className="px-4 py-3 text-right text-sm font-semibold text-green-400">{formatCurrency(totalEstoqueVenda)}</td>
-                    <td colSpan={3}></td>
-                  </tr>
-                </tfoot>
               </table>
             </div>
           </div>
         </>
       )}
 
-      {/* RELATÓRIOS DE VENDAS */}
+      {/* Relatórios de Vendas */}
       {reportData && reportType !== 'inventario' && (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-6">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm text-slate-400">Total de Vendas</span>
@@ -459,7 +471,7 @@ export default function Relatorios() {
             </div>
             <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-6">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm text-slate-400">Produtos Vendidos</span>
+                <span className="text-sm text-slate-400">Itens Vendidos</span>
                 <Package className="w-5 h-5 text-blue-400" />
               </div>
               <p className="text-2xl font-bold text-slate-100">{reportData.totalProdutos}</p>
@@ -475,51 +487,53 @@ export default function Relatorios() {
             </div>
           </div>
 
-          <div className="flex gap-3 flex-wrap">
-            <button onClick={exportCSV} className="flex items-center gap-2 px-4 py-2 text-sm text-green-400 border border-green-500/30 rounded-lg hover:bg-green-500/10 transition-colors">
-              <FileSpreadsheet className="w-4 h-4" /> Exportar CSV
-            </button>
-            <button onClick={exportPDF} className="flex items-center gap-2 px-4 py-2 text-sm text-red-400 border border-red-500/30 rounded-lg hover:bg-red-500/10 transition-colors">
-              <FileText className="w-4 h-4" /> Exportar PDF
-            </button>
-            <button onClick={printReport} className="flex items-center gap-2 px-4 py-2 text-sm text-blue-400 border border-blue-500/30 rounded-lg hover:bg-blue-500/10 transition-colors">
-              <Printer className="w-4 h-4" /> Imprimir
-            </button>
-          </div>
-
-          <div className="bg-slate-900/50 border border-slate-800 rounded-2xl overflow-hidden">
-            <div className="p-4 border-b border-slate-800 flex items-center gap-2">
-              <BarChart3 className="w-5 h-5 text-blue-400" />
-              <h3 className="text-base font-semibold text-slate-100">
+          <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-slate-100">
                 {reportType === 'vendas' && 'Vendas por Categoria'}
-                {reportType === 'pagamentos' && 'Vendas por Forma de Pagamento'}
+                {reportType === 'produtos' && 'Vendas por Forma de Pagamento'}
                 {reportType === 'vendedores' && 'Performance de Vendedores'}
-              </h3>
+              </h2>
+              <button onClick={exportToCSV}
+                className="flex items-center gap-2 px-3 py-2 text-sm text-blue-400 border border-blue-500/25 rounded-lg hover:border-blue-500/50 transition-colors">
+                <Download className="w-4 h-4" /> CSV
+              </button>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full">
-                <thead className="bg-slate-800/50">
-                  <tr>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-slate-400 uppercase">
-                      {reportType === 'vendas' ? 'Categoria' : reportType === 'pagamentos' ? 'Forma de Pagamento' : 'Vendedor'}
+                <thead>
+                  <tr className="border-b border-slate-800">
+                    <th className="text-left py-3 px-4 text-sm font-medium text-slate-300">
+                      {reportType === 'vendas' ? 'Categoria' : reportType === 'produtos' ? 'Forma de Pagamento' : 'Vendedor'}
                     </th>
-                    <th className="px-4 py-3 text-right text-xs font-medium text-slate-400 uppercase">Total</th>
-                    <th className="px-4 py-3 text-right text-xs font-medium text-slate-400 uppercase">Quantidade</th>
-                    <th className="px-4 py-3 text-right text-xs font-medium text-slate-400 uppercase">% do Total</th>
+                    <th className="text-right py-3 px-4 text-sm font-medium text-slate-300">Total</th>
+                    <th className="text-right py-3 px-4 text-sm font-medium text-slate-300">Quantidade</th>
+                    <th className="text-right py-3 px-4 text-sm font-medium text-slate-300">% do Total</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-800">
-                  {(reportType === 'vendas' ? reportData.vendasPorCategoria.map(i => ({ label: i.categoria, ...i }))
-                    : reportType === 'pagamentos' ? reportData.vendasPorFormaPagamento.map(i => ({ label: i.forma, ...i }))
-                    : reportData.vendasPorVendedor.map(i => ({ label: i.vendedor, ...i }))
-                  ).map((item, idx) => (
-                    <tr key={idx} className="hover:bg-slate-800/30">
-                      <td className="px-4 py-3 text-sm text-slate-200">{item.label}</td>
-                      <td className="px-4 py-3 text-right text-sm text-green-400 font-medium">{formatCurrency(item.total)}</td>
-                      <td className="px-4 py-3 text-right text-sm text-slate-300">{item.quantidade}</td>
-                      <td className="px-4 py-3 text-right text-sm text-blue-400">
-                        {reportData.totalVendas > 0 ? ((item.total / reportData.totalVendas) * 100).toFixed(1) : 0}%
-                      </td>
+                <tbody>
+                  {reportType === 'vendas' && reportData.vendasPorCategoria.map((item, i) => (
+                    <tr key={i} className="border-b border-slate-800/50 hover:bg-slate-800/30">
+                      <td className="py-3 px-4 text-sm text-slate-200">{item.categoria}</td>
+                      <td className="py-3 px-4 text-sm text-slate-200 text-right">{formatCurrency(item.total)}</td>
+                      <td className="py-3 px-4 text-sm text-slate-200 text-right">{item.quantidade}</td>
+                      <td className="py-3 px-4 text-sm text-slate-200 text-right">{((item.total / reportData.totalVendas) * 100).toFixed(1)}%</td>
+                    </tr>
+                  ))}
+                  {reportType === 'produtos' && reportData.vendasPorFormaPagamento.map((item, i) => (
+                    <tr key={i} className="border-b border-slate-800/50 hover:bg-slate-800/30">
+                      <td className="py-3 px-4 text-sm text-slate-200">{item.forma}</td>
+                      <td className="py-3 px-4 text-sm text-slate-200 text-right">{formatCurrency(item.total)}</td>
+                      <td className="py-3 px-4 text-sm text-slate-200 text-right">{item.quantidade}</td>
+                      <td className="py-3 px-4 text-sm text-slate-200 text-right">{((item.total / reportData.totalVendas) * 100).toFixed(1)}%</td>
+                    </tr>
+                  ))}
+                  {reportType === 'vendedores' && reportData.vendasPorVendedor.map((item, i) => (
+                    <tr key={i} className="border-b border-slate-800/50 hover:bg-slate-800/30">
+                      <td className="py-3 px-4 text-sm text-slate-200">{item.vendedor}</td>
+                      <td className="py-3 px-4 text-sm text-slate-200 text-right">{formatCurrency(item.total)}</td>
+                      <td className="py-3 px-4 text-sm text-slate-200 text-right">{item.quantidade}</td>
+                      <td className="py-3 px-4 text-sm text-slate-200 text-right">{((item.total / reportData.totalVendas) * 100).toFixed(1)}%</td>
                     </tr>
                   ))}
                 </tbody>

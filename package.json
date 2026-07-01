@@ -8,5 +8,8 @@
     "build:admin": "cd admin-system && npm install && npm run build",
     "build:cliente": "cd cliente-system && npm install && npm run build",
     "copy-dist": "node scripts/copy-dist.js"
+  },
+  "dependencies": {
+    "lucide-react": "^1.22.0"
   }
 }
