@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
-import { RefreshCw, LogOut, User } from "lucide-react";
+import { RefreshCw, LogOut, User, AlertTriangle, Clock, CheckCircle, DollarSign, XCircle, Bell, Calendar, Copy, Check, CreditCard } from "lucide-react";
 import FiltersBar, { Filters } from "../components/FiltersBar";
 import KpiCard from "../components/KpiCard";
 import LineChartCard from "../components/charts/LineChartCard";
@@ -15,6 +15,23 @@ import { useAuth } from "../hooks/useAuth";
 import { useUserRole } from "../hooks/useUserRole";
 import { supabase } from "../lib/supabase";
 
+interface PaymentAlert {
+  id: string;
+  amount: number;
+  due_date: string;
+  paid_date: string | null;
+  status: 'pending' | 'paid' | 'overdue' | 'cancelled';
+  notes: string | null;
+  days_until_due: number;
+  alert_type: 'overdue' | 'due_today' | 'due_tomorrow' | 'due_soon';
+}
+
+interface PixInfo {
+  pix_key: string;
+  pix_key_type: string;
+  pix_name: string;
+}
+
 function filterOrders(orders: OrderRow[], filters: Filters): OrderRow[] {
   return orders.filter((order) => {
     // Filtro por período
@@ -28,7 +45,7 @@ function filterOrders(orders: OrderRow[], filters: Filters): OrderRow[] {
     // Filtro por status
     if (filters.status !== "all" && order.status !== filters.status) return false;
 
-    
+
     // Filtro por busca
     if (filters.query.trim()) {
       const query = filters.query.toLowerCase();
@@ -59,21 +76,30 @@ export default function Dashboard() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [useSupabase, setUseSupabase] = useState(false);
 
+  // ESTADOS DOS ALERTAS DE PAGAMENTO
+  const [paymentAlerts, setPaymentAlerts] = useState<PaymentAlert[]>([]);
+  const [loadingAlerts, setLoadingAlerts] = useState(true);
+  const [alertsDismissed, setAlertsDismissed] = useState(false);
+
+  // ESTADO DA CHAVE PIX
+  const [pixInfo, setPixInfo] = useState<PixInfo | null>(null);
+  const [pixCopied, setPixCopied] = useState(false);
+
   // Verificar se deve usar Supabase
   useEffect(() => {
     const supabaseUrl = (import.meta as any).env.VITE_SUPABASE_URL || localStorage.getItem('supabase_url');
     const supabaseKey = (import.meta as any).env.VITE_SUPABASE_ANON_KEY || localStorage.getItem('supabase_key');
-    
+
     // Verificar se o Supabase está configurado
     const isValidConfig = !!(supabaseUrl && supabaseKey && supabaseUrl.includes('supabase.co'));
     setUseSupabase(isValidConfig);
-    
+
     console.log('🔧 Configuração Supabase:', {
       url: supabaseUrl ? 'Definida' : 'Não definida',
       key: supabaseKey ? 'Definida' : 'Não definida',
       valid: isValidConfig
     });
-    
+
     if (!isValidConfig) {
       console.log('⚠️ Supabase não configurado, usando LocalStorage');
     } else {
@@ -85,45 +111,167 @@ export default function Dashboard() {
   useEffect(() => {
     if (authLoading || permissionsLoading) return;
     loadData();
+    loadPaymentAlerts();
+    loadPixInfo();
   }, [user, authLoading, useSupabase, permissions, permissionsLoading]);
+
+  // FUNÇÃO PARA CARREGAR CHAVE PIX
+  const loadPixInfo = async () => {
+    try {
+      if (!useSupabase) return;
+
+      // Tentar pegar da tabela admin_settings (chave global)
+      const { data: settings } = await supabase
+        .from('admin_settings')
+        .select('pix_key, pix_key_type, pix_name')
+        .maybeSingle();
+
+      if (settings?.pix_key) {
+        setPixInfo(settings);
+        return;
+      }
+
+      // Fallback: pegar da empresa
+      if (permissions?.companyId) {
+        const { data: company } = await supabase
+          .from('companies')
+          .select('pix_key, pix_key_type')
+          .eq('id', permissions.companyId)
+          .maybeSingle();
+
+        if (company?.pix_key) {
+          setPixInfo({
+            pix_key: company.pix_key,
+            pix_key_type: company.pix_key_type || 'cpf',
+            pix_name: ''
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Erro ao carregar Pix:', error);
+    }
+  };
+
+  // FUNÇÃO PARA COPIAR CHAVE PIX
+  const copyPixKey = async () => {
+    if (!pixInfo?.pix_key) return;
+
+    try {
+      await navigator.clipboard.writeText(pixInfo.pix_key);
+      setPixCopied(true);
+      setTimeout(() => setPixCopied(false), 2000);
+    } catch (err) {
+      // Fallback
+      const textArea = document.createElement('textarea');
+      textArea.value = pixInfo.pix_key;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
+      setPixCopied(true);
+      setTimeout(() => setPixCopied(false), 2000);
+    }
+  };
+
+  // FUNÇÃO PARA CARREGAR ALERTAS DE PAGAMENTO
+  const loadPaymentAlerts = async () => {
+    try {
+      setLoadingAlerts(true);
+
+      if (!useSupabase || !user || !permissions?.companyId) {
+        setPaymentAlerts([]);
+        return;
+      }
+
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      // Buscar pagamentos pendentes da empresa do lojista
+      const { data: payments, error } = await supabase
+        .from('client_payments')
+        .select('id, amount, due_date, paid_date, status, notes')
+        .eq('company_id', permissions.companyId)
+        .eq('status', 'pending')
+        .order('due_date', { ascending: true });
+
+      if (error) {
+        console.error('Erro ao carregar alertas:', error);
+        setPaymentAlerts([]);
+        return;
+      }
+
+      const alerts: PaymentAlert[] = [];
+
+      payments?.forEach((payment: any) => {
+        const due = new Date(payment.due_date);
+        due.setHours(0, 0, 0, 0);
+        const diffDays = Math.round((due.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+
+        let alert_type: PaymentAlert['alert_type'];
+        if (diffDays < 0) alert_type = 'overdue';
+        else if (diffDays === 0) alert_type = 'due_today';
+        else if (diffDays === 1) alert_type = 'due_tomorrow';
+        else if (diffDays <= 3) alert_type = 'due_soon';
+        else return; // Só mostra até 3 dias antes
+
+        alerts.push({
+          id: payment.id,
+          amount: payment.amount,
+          due_date: payment.due_date,
+          paid_date: payment.paid_date,
+          status: payment.status,
+          notes: payment.notes,
+          days_until_due: diffDays,
+          alert_type
+        });
+      });
+
+      setPaymentAlerts(alerts);
+    } catch (error) {
+      console.error('Erro ao carregar alertas de pagamento:', error);
+      setPaymentAlerts([]);
+    } finally {
+      setLoadingAlerts(false);
+    }
+  };
 
   const loadData = async () => {
     setIsLoading(true);
     console.log('🔄 Iniciando carregamento de dados...');
     console.log('📊 useSupabase:', useSupabase, 'user:', !!user, 'isSeller:', isSeller);
-    
+
     try {
       if (useSupabase && user) {
         console.log('🔗 Carregando dados do Supabase...');
-        
+
         // Construir query base
         let query = supabase
           .from('sales')
           .select('*');
-        
+
         // Filtrar por empresa
         if (permissions?.companyId) {
           console.log('🏢 Filtrando vendas da empresa:', permissions.companyId);
           query = query.eq('company_id', permissions.companyId);
         }
-        
+
         // Se for vendedor, filtrar apenas suas vendas
         if (isSeller && permissions?.sellerId) {
           console.log('👤 Vendedor detectado! Filtrando vendas do seller_id:', permissions.sellerId);
           query = query.eq('seller_id', permissions.sellerId);
         }
-        
+
         // Ordenar por data
         query = query.order('created_at', { ascending: false});
-        
+
         const { data: salesData, error } = await query;
-        
+
         if (error) {
           console.error('Erro ao carregar vendas:', error);
           setOrders([]);
         } else {
           console.log('✅ Vendas carregadas do Supabase:', salesData?.length || 0);
-          
+
           // Converter dados do Supabase para o formato esperado
           const convertedOrders = (salesData || []).map(sale => ({
             id: sale.id,
@@ -135,7 +283,7 @@ export default function Dashboard() {
             category: sale.category || 'Venda PDV',
             description: sale.description || 'Venda realizada'
           }));
-          
+
           setOrders(convertedOrders);
           // Calcular lucro real
 const paidSaleIds = (salesData || [])
@@ -199,6 +347,8 @@ if (paidSaleIds.length > 0) {
     setIsRefreshing(true);
     try {
       await loadData();
+      await loadPaymentAlerts();
+      await loadPixInfo();
     } catch (error) {
       console.error('Erro ao atualizar dados:', error);
       alert('Erro ao atualizar dados. Tente novamente.');
@@ -220,7 +370,7 @@ if (paidSaleIds.length > 0) {
           .from('sales')
           .delete()
           .neq('id', '00000000-0000-0000-0000-000000000000'); // Deleta todos os registros
-        
+
         if (error) {
           console.error('Erro do Supabase:', error);
           throw new Error(`Erro do Supabase: ${error.message}`);
@@ -235,18 +385,19 @@ if (paidSaleIds.length > 0) {
           localStorage.removeItem('dashboard-vendas-data');
         }
       }
-      
+
       // Atualizar estado local
       setOrders([]);
       alert('Todos os dados foram limpos com sucesso!');
-      
+
     } catch (error: any) {
       console.error('Erro completo ao limpar dados:', error);
-      
+
       // Tentar limpeza de emergência apenas local
       setOrders([]);
-      
-      alert(`Erro ao limpar dados remotos, mas dados locais foram limpos.\nErro: ${error.message || 'Erro desconhecido'}`);
+
+      alert(`Erro ao limpar dados remotos, mas dados locais foram limpos.
+Erro: ${error.message || 'Erro desconhecido'}`);
     }
   };
 
@@ -268,7 +419,7 @@ if (paidSaleIds.length > 0) {
   // Dados para gráfico de linha (receita por dia)
   const lineChartData = useMemo(() => {
     const dailyRevenue = new Map<string, number>();
-    
+
     filteredOrders
       .filter((order) => order.status === "paid")
       .forEach((order) => {
@@ -285,7 +436,7 @@ if (paidSaleIds.length > 0) {
   // Dados para gráfico de barras (receita por categoria)
   const barChartData = useMemo(() => {
     const categoryRevenue = new Map<string, number>();
-    
+
     filteredOrders
       .filter((order) => order.status === "paid")
       .forEach((order) => {
@@ -301,7 +452,7 @@ if (paidSaleIds.length > 0) {
   // Dados para gráfico donut (pedidos por status)
   const donutChartData = useMemo(() => {
     const statusCount = new Map<string, number>();
-    
+
     filteredOrders.forEach((order) => {
       statusCount.set(order.status, (statusCount.get(order.status) || 0) + 1);
     });
@@ -318,6 +469,61 @@ if (paidSaleIds.length > 0) {
       status: status as "paid" | "pending" | "canceled",
     }));
   }, [filteredOrders]);
+
+  // HELPERS DOS ALERTAS
+  const getAlertIcon = (type: PaymentAlert['alert_type']) => {
+    switch (type) {
+      case 'overdue': return <XCircle className="w-5 h-5 text-red-400" />;
+      case 'due_today': return <AlertTriangle className="w-5 h-5 text-amber-400" />;
+      case 'due_tomorrow': return <Clock className="w-5 h-5 text-amber-400" />;
+      case 'due_soon': return <Bell className="w-5 h-5 text-blue-400" />;
+    }
+  };
+
+  const getAlertBg = (type: PaymentAlert['alert_type']) => {
+    switch (type) {
+      case 'overdue': return 'bg-red-500/10 border-red-500/30';
+      case 'due_today': return 'bg-amber-500/10 border-amber-500/30';
+      case 'due_tomorrow': return 'bg-amber-500/10 border-amber-500/30';
+      case 'due_soon': return 'bg-blue-500/10 border-blue-500/30';
+    }
+  };
+
+  const getAlertText = (type: PaymentAlert['alert_type'], days: number) => {
+    switch (type) {
+      case 'overdue': return `Seu pagamento está ${Math.abs(days)} dias em atraso. Regularize para evitar suspensão.`;
+      case 'due_today': return 'Seu pagamento vence hoje! Regularize o quanto antes.';
+      case 'due_tomorrow': return 'Seu pagamento vence amanhã. Não deixe para última hora!';
+      case 'due_soon': return `Seu pagamento vence em ${days} dias. Fique atento!`;
+    }
+  };
+
+  const getPixTypeLabel = (type: string) => {
+    switch (type) {
+      case 'cpf': return 'CPF';
+      case 'cnpj': return 'CNPJ';
+      case 'email': return 'E-mail';
+      case 'phone': return 'Telefone';
+      case 'random': return 'Chave Aleatória';
+      default: return 'Chave Pix';
+    }
+  };
+
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+  };
+
+  const formatDate = (dateStr: string) => {
+    return new Date(dateStr + 'T12:00:00').toLocaleDateString('pt-BR');
+  };
+
+  // Verificar alerta mais crítico
+  const criticalAlert = paymentAlerts.length > 0 
+    ? paymentAlerts.find(a => a.alert_type === 'overdue') 
+      || paymentAlerts.find(a => a.alert_type === 'due_today')
+      || paymentAlerts.find(a => a.alert_type === 'due_tomorrow')
+      || paymentAlerts[0]
+    : null;
 
   if (authLoading || permissionsLoading) {
     return (
@@ -343,7 +549,186 @@ if (paidSaleIds.length > 0) {
 
   return (
     <div className="space-y-6">
-      
+
+      {/* ALERTAS DE PAGAMENTO COM CHAVE PIX - BANNER PARA O LOJISTA */}
+      {useSupabase && user && !alertsDismissed && criticalAlert && (
+        <div className={`border rounded-xl p-4 ${getAlertBg(criticalAlert.alert_type)}`}>
+          <div className="flex items-start gap-3">
+            <div className="flex-shrink-0 mt-0.5">
+              {getAlertIcon(criticalAlert.alert_type)}
+            </div>
+            <div className="flex-1 min-w-0">
+              {/* Header */}
+              <div className="flex items-center justify-between gap-2">
+                <h4 className="text-sm font-semibold text-slate-100">
+                  {criticalAlert.alert_type === 'overdue' ? '⚠️ Pagamento em Atraso' :
+                   criticalAlert.alert_type === 'due_today' ? '⏰ Pagamento Vence Hoje' :
+                   criticalAlert.alert_type === 'due_tomorrow' ? '🔔 Pagamento Vence Amanhã' :
+                   '💳 Pagamento Próximo do Vencimento'}
+                </h4>
+                <button 
+                  onClick={() => setAlertsDismissed(true)}
+                  className="text-slate-400 hover:text-slate-200 p-1 rounded"
+                  title="Dispensar alerta"
+                >
+                  <span className="text-lg leading-none">×</span>
+                </button>
+              </div>
+
+              {/* Mensagem */}
+              <p className="text-sm text-slate-300 mt-1">
+                {getAlertText(criticalAlert.alert_type, criticalAlert.days_until_due)}
+              </p>
+
+              {/* Info do pagamento */}
+              <div className="flex flex-wrap items-center gap-4 mt-2">
+                <div className="flex items-center gap-1.5">
+                  <DollarSign className="w-3.5 h-3.5 text-slate-400" />
+                  <span className="text-sm font-medium text-slate-200">
+                    {formatCurrency(criticalAlert.amount)}
+                  </span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                  <span className="text-sm text-slate-400">
+                    Vencimento: {formatDate(criticalAlert.due_date)}
+                  </span>
+                </div>
+                {criticalAlert.notes && (
+                  <span className="text-xs text-slate-500">
+                    Obs: {criticalAlert.notes}
+                  </span>
+                )}
+              </div>
+
+              {/* CHAVE PIX */}
+              {pixInfo?.pix_key && (
+                <div className="mt-3 bg-slate-800/50 border border-slate-700 rounded-lg p-3">
+                  <div className="flex items-center gap-2 mb-2">
+                    <CreditCard className="w-4 h-4 text-green-400" />
+                    <span className="text-xs font-medium text-slate-300">
+                      Pague via Pix — {getPixTypeLabel(pixInfo.pix_key_type)}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-3 py-2">
+                      <code className="text-sm text-green-400 font-mono break-all">
+                        {pixInfo.pix_key}
+                      </code>
+                    </div>
+                    <button
+                      onClick={copyPixKey}
+                      className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                        pixCopied 
+                          ? 'bg-green-500/20 text-green-400 border border-green-500/30' 
+                          : 'bg-slate-700 hover:bg-slate-600 text-slate-200 border border-slate-600'
+                      }`}
+                    >
+                      {pixCopied ? (
+                        <>
+                          <Check className="w-4 h-4" />
+                          Copiado!
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="w-4 h-4" />
+                          Copiar
+                        </>
+                      )}
+                    </button>
+                  </div>
+
+                  {pixInfo.pix_name && (
+                    <p className="text-xs text-slate-500 mt-1.5">
+                      Titular: {pixInfo.pix_name}
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {/* Outros pagamentos pendentes */}
+              {paymentAlerts.length > 1 && (
+                <p className="text-xs text-slate-500 mt-2">
+                  +{paymentAlerts.length - 1} outro{paymentAlerts.length > 2 ? 's' : ''} pagamento{paymentAlerts.length > 2 ? 's' : ''} pendente{paymentAlerts.length > 2 ? 's' : ''}
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Quando não há alertas críticos mas há pagamentos em breve */}
+      {useSupabase && user && !alertsDismissed && !criticalAlert && paymentAlerts.length > 0 && (
+        <div className="bg-blue-500/5 border border-blue-500/20 rounded-xl p-4">
+          <div className="flex items-start gap-3">
+            <Bell className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <div className="flex items-center justify-between">
+                <h4 className="text-sm font-semibold text-slate-100">💳 Pagamento em Breve</h4>
+                <button 
+                  onClick={() => setAlertsDismissed(true)}
+                  className="text-slate-400 hover:text-slate-200 p-1 rounded"
+                >
+                  <span className="text-lg leading-none">×</span>
+                </button>
+              </div>
+              <p className="text-sm text-slate-300 mt-1">
+                Você tem {paymentAlerts.length} pagamento{paymentAlerts.length > 1 ? 's' : ''} pendente{paymentAlerts.length > 1 ? 's' : ''}. 
+                O próximo vence em {paymentAlerts[0].days_until_due} dias.
+              </p>
+              <div className="flex items-center gap-4 mt-2">
+                <span className="text-sm font-medium text-slate-200">
+                  {formatCurrency(paymentAlerts[0].amount)}
+                </span>
+                <span className="text-sm text-slate-400">
+                  Vencimento: {formatDate(paymentAlerts[0].due_date)}
+                </span>
+              </div>
+
+              {/* CHAVE PIX */}
+              {pixInfo?.pix_key && (
+                <div className="mt-3 bg-slate-800/50 border border-slate-700 rounded-lg p-3">
+                  <div className="flex items-center gap-2 mb-2">
+                    <CreditCard className="w-4 h-4 text-green-400" />
+                    <span className="text-xs font-medium text-slate-300">
+                      Pague via Pix — {getPixTypeLabel(pixInfo.pix_key_type)}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-3 py-2">
+                      <code className="text-sm text-green-400 font-mono break-all">
+                        {pixInfo.pix_key}
+                      </code>
+                    </div>
+                    <button
+                      onClick={copyPixKey}
+                      className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                        pixCopied 
+                          ? 'bg-green-500/20 text-green-400 border border-green-500/30' 
+                          : 'bg-slate-700 hover:bg-slate-600 text-slate-200 border border-slate-600'
+                      }`}
+                    >
+                      {pixCopied ? (
+                        <>
+                          <Check className="w-4 h-4" />
+                          Copiado!
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="w-4 h-4" />
+                          Copiar
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
   <div className="min-w-0">
     <h1 className="text-2xl font-bold text-slate-100">
@@ -379,7 +764,7 @@ if (paidSaleIds.length > 0) {
       <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
       <span className="hidden sm:inline ml-1">{isRefreshing ? 'Atualizando...' : 'Atualizar'}</span>
     </button>
-    
+
   </div>
 </div>
 
