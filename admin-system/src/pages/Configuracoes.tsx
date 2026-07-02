@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import Layout from '../components/Layout';
+import PixConfig from '../components/PixConfig';
 import { 
   Settings, 
   User, 
@@ -390,6 +391,9 @@ export default function Configuracoes() {
             </div>
           </div>
         </div>
+
+        {/* Configuração Pix */}
+        <PixConfig />
 
         {/* Informações do Sistema */}
         <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-6">
