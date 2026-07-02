@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { CreditCard, Save, Check } from 'lucide-react';
+import { CreditCard, Save, Check, Copy } from 'lucide-react';
 
 interface PixSettings {
   pix_key: string;
@@ -19,6 +19,7 @@ export default function PixConfig() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     loadSettings();
@@ -71,6 +72,12 @@ export default function PixConfig() {
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleCopyPixKey = () => {
+    navigator.clipboard.writeText(settings.pix_key);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   };
 
   if (loading) {
@@ -160,10 +167,23 @@ export default function PixConfig() {
         {settings.pix_key && (
           <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-4">
             <p className="text-xs text-slate-400 mb-2">Preview para o cliente:</p>
-            <div className="bg-slate-900 border border-slate-700 rounded-lg px-3 py-2">
-              <code className="text-sm text-green-400 font-mono break-all">
-                {settings.pix_key}
-              </code>
+            <div className="flex items-center gap-2">
+              <div className="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-3 py-2">
+                <code className="text-sm text-green-400 font-mono break-all">
+                  {settings.pix_key}
+                </code>
+              </div>
+              <button
+                onClick={handleCopyPixKey}
+                className={`p-2 rounded-lg transition-colors ${
+                  copied
+                    ? 'bg-green-500/20 text-green-400'
+                    : 'bg-slate-700 hover:bg-slate-600 text-slate-300'
+                }`}
+                title={copied ? 'Copiado!' : 'Copiar chave Pix'}
+              >
+                {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+              </button>
             </div>
             <p className="text-xs text-slate-500 mt-1">
               {settings.pix_name && `Titular: ${settings.pix_name}`}
