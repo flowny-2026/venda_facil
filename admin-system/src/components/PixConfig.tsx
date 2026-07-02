@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { CreditCard, Save, Check, Copy } from 'lucide-react';
+import { CreditCard, Save, Check } from 'lucide-react';
 
 interface PixSettings {
   pix_key: string;
